@@ -1,0 +1,3 @@
+SUMMARY gyro ON: 104/108 passed 2 laps; gyro OFF: 71/108
+STRESS (gyro on, tape >= sensor spacing): 382/400 passed 2 laps
+INVERTED GYRO SIGN (auto-corrected at first pivot): 95/96 passed 2 laps

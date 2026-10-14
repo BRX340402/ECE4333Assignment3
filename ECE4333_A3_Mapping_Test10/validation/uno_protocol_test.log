@@ -1,0 +1,42 @@
+ok   N221 status about every second while idle
+ok   N221 reports UV=40
+ok   N230 samples at 2 Hz while idle
+ok   N210 sensors line
+ok   Start refused before settings arrive
+ok   settings acknowledged with N222 echo (ESP32 format)
+ok   camera/traffic messages ignored silently
+ok   Start accepted
+ok   mapping run active, FOLLOW
+ok   cruise PWM 60 on a centred line
+ok   N230 at 10 Hz while driving (2 s)
+ok   sample state field = mode 6 + gyro OK + FOLLOW (0x69=105)
+ok   N221 reports the detected IMU type
+ok   N221 carries sample counter
+ok   sample event mask present (centre sensor saw black -> 2)
+     longest line 300 bytes (ESP32 accepts <352)
+ok   every line fits the ESP32 receive buffer
+     example: {"N":230,"d":[19,7100,100,900,100,60,60,0,0,376,37,0,-1,105,2]}
+ok   one near ultrasonic reading does not latch E-stop
+ok   3 consecutive near readings latch E-stop, motors off
+ok   E-stop cannot be cleared while obstacle is still near
+ok   E-stop cleared when clear, car stays stopped
+ok   STOP (N100) stops the run
+ok   manual drive (web arrows) works
+ok   manual drive times out without heartbeat
+ok   failed gyro reads are reported (GY=0)
+ok   Start refused while the gyro is not working
+ok   gyro re-detected automatically while parked
+ok   Start accepted again once the gyro works
+ok   zero accepted, 1 s bias re-measurement running
+ok   Start refused while the gyro is calibrating
+ok   after calibration heading is 0 and ZR increments
+ok   N221 reports CB (calibrating) 1 then 0
+ok   idle N230 at 5 Hz for the live gyro readout
+ok   reversed gyro sign does not stop the run
+ok   gyro sign auto-corrected at the first pivot
+ok   after correction a left pivot reads as a LEFT (positive) turn
+ok   N221 reports the correction (GF/GL) for the web page
+ok   saved GS from the ESP32 does not undo the learned sign until power-off
+ok   line sensor hysteresis (black>=640 to enter, <560 to leave at BL=600)
+
+ALL UNO PROTOCOL CHECKS PASSED

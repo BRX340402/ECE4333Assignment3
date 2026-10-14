@@ -1,0 +1,6 @@
+In file included from /workspace/scratch/f0dcb3bdc082/work/test12/ECE4333_Assignment3_Test_12/UNO_Assignment2/UNO_Assignment2.ino:5:0:
+/root/Arduino/libraries/FastLED/FastLED.h:14:21: note: #pragma message: FastLED version 3.002.010
+ #    pragma message "FastLED version 3.002.010"
+                     ^~~~~~~~~~~~~~~~~~~~~~~~~~~
+Sketch uses 32194 bytes (99%) of program storage space. Maximum is 32256 bytes.
+Global variables use 1358 bytes (66%) of dynamic memory, leaving 690 bytes for local variables. Maximum is 2048 bytes.

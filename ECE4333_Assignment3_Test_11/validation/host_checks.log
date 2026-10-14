@@ -1,0 +1,12 @@
+PASS gyro required, gentle local correction, PWM100 pulse/rest, hard continuous-yaw bounds, stall timeout, low-speed reacquisition, zero speed
+PASS unchanged red/STOP/green decisions
+PASS unique UI IDs, DOM references, JavaScript syntax, gzip roundtrip, default gyro, autonomous admission gate, actual UNO direction checks
+PASS stationary bias calibration, sample-spread rejection, I2C failure, saturated gyro, delayed updates
+PASS full-page mocked UI flow: four tabs, startup gate, bias/check/zero, run, calibration denied while moving, per-run scan finish, sign invalidates verification, normalized heading
+PASS ESP32 host-stub syntax; not a target-board build
+PASS ordered map turns, crossing straight, no false local progress, wrong-exit rejection, 120-degree turn, bounded missing-line search
+PASS log exact JSON records, inactive gate, overflow preserves earlier data, dropped count and explicit reset
+Telemetry maximum sample length: 231
+Telemetry maximum sample length: 61
+Telemetry maximum sample length: 294
+PASS actual UNO route handler: stopped-only, ranges, missing/malformed fields; survey traffic bypass; serial capacity

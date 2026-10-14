@@ -1,0 +1,1 @@
+Browser test (Chromium, 1024x1366 tablet viewport, mock car with 3 s outage + page reload): 1077/1077 lines received, 0 lost, 7/7 downloads OK, 0 JS errors. Web map core == draw_map.py on the same data.
