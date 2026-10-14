@@ -50,7 +50,7 @@ void latchEStop(uint8_t why){standby();eStopLatched=true;eStopReason=why;eventMa
 void startRun(){
  runNumber++;mode=6;setPan(90);pose.zero(millis());
  follower.cruise=cruise;follower.pivot=PIVOT_PWM;follower.crossHold=CROSS_HOLD_MS;follower.maxTurn=MAX_CORNER_DEG;
- follower.wideSweep=WIDE_SEARCH_DEG;follower.degPerMs=NO_GYRO_DEG_PER_MS;follower.blockCm=CREEP_BLOCK_CM;
+ follower.wideSweep=WIDE_SEARCH_DEG;follower.degPerMs=NO_GYRO_DEG_PER_MS;follower.blockCm=CREEP_BLOCK_CM;follower.route=ROUTE_HINT;
  follower.start(pose.yawDegrees,millis());
  traffic.reset();traffic.enabled=echoRS==1;
  sampleSeq=0;droppedSamples=0;ringCount=0;lastSample=0;
@@ -188,9 +188,9 @@ void scheduleTx(uint32_t now){
  if(statusDue){
   lastStatus=now;traffic.changed=false;uint8_t ts=trafficState();
   bool searching=mode==6&&(follower.state==LineFollower::TURN||follower.state==LineFollower::SEARCH);
-  startTx(snprintf_P(tx,sizeof(tx),PSTR("{\"N\":221,\"M\":%u,\"TS\":%u,\"ID\":%u,\"X\":%d,\"Y\":%d,\"H\":%d,\"KX\":%d,\"KY\":%d,\"KH\":%d,\"L\":%d,\"C\":%d,\"R\":%d,\"GY\":%u,\"YA\":%d,\"UV\":%d,\"FR\":%d,\"UT\":%lu,\"FC\":%u,\"FS\":%u,\"SE\":%u,\"SP\":%u,\"GC\":0,\"PL\":%d,\"PR\":%d,\"ES\":%u,\"ER\":%u,\"PD\":0,\"RN\":%u,\"GN\":%u,\"ZR\":%u,\"MQ\":%u,\"MD\":%u,\"IM\":%u,\"IW\":%u,\"IQ\":%u,\"IB\":%u,\"CB\":%u,\"GL\":%d,\"GF\":%u}\n"),
-   mode,ts,traffic.req,(int)pose.x,(int)pose.y,(int)(pose.heading*180/PI),(int)pose.kinX,(int)pose.kinY,(int)(pose.kinHeading*180/PI),lineL,lineM,lineR,(unsigned)pose.gyro,(int)pose.yawDegrees,FIRMWARE_UV,freeRam(),(unsigned long)now,
-   (unsigned)(mode==6?follower.fault:0),(unsigned)(mode==6?follower.faultState:0),(unsigned)searching,(unsigned)(mode==6?follower.state:0),leftPWM,rightPWM,(unsigned)eStopLatched,(unsigned)eStopReason,runNumber,(unsigned)gyroNavigation,(unsigned)zeroRevision,sampleSeq,droppedSamples,(unsigned)pose.imuType,(unsigned)pose.whoMpu,(unsigned)pose.whoQmi,(unsigned)pose.busRecoveries,(unsigned)pose.calibrating,(int)gyroSignLearned,(unsigned)gyroSignFlips));
+  startTx(snprintf_P(tx,sizeof(tx),PSTR("{\"N\":221,\"M\":%u,\"TS\":%u,\"ID\":%u,\"X\":%d,\"Y\":%d,\"H\":%d,\"L\":%d,\"C\":%d,\"R\":%d,\"GY\":%u,\"YA\":%d,\"UV\":%d,\"FR\":%d,\"UT\":%lu,\"FC\":%u,\"FS\":%u,\"SE\":%u,\"SP\":%u,\"PL\":%d,\"PR\":%d,\"ES\":%u,\"ER\":%u,\"RN\":%u,\"GN\":%u,\"ZR\":%u,\"MQ\":%u,\"MD\":%u,\"IM\":%u,\"IW\":%u,\"IQ\":%u,\"IB\":%u,\"CB\":%u,\"GL\":%d,\"GF\":%u,\"SG\":%u}\n"),
+   mode,ts,traffic.req,(int)pose.x,(int)pose.y,(int)(pose.heading*180/PI),lineL,lineM,lineR,(unsigned)pose.gyro,(int)pose.yawDegrees,FIRMWARE_UV,freeRam(),(unsigned long)now,
+   (unsigned)(mode==6?follower.fault:0),(unsigned)(mode==6?follower.faultState:0),(unsigned)searching,(unsigned)(mode==6?follower.state:0),leftPWM,rightPWM,(unsigned)eStopLatched,(unsigned)eStopReason,runNumber,(unsigned)gyroNavigation,(unsigned)zeroRevision,sampleSeq,droppedSamples,(unsigned)pose.imuType,(unsigned)pose.whoMpu,(unsigned)pose.whoQmi,(unsigned)pose.busRecoveries,(unsigned)pose.calibrating,(int)gyroSignLearned,(unsigned)gyroSignFlips,(unsigned)follower.seg));
   return;
  }
  if(uint32_t(now-lastSensors)>=SENSOR_MS){
@@ -222,7 +222,7 @@ void loop(){
  }else if(mode==6){
   traffic.tick(now);
   if(traffic.stopped())follower.lastMs=now; // stand still for red / STOP sign; the follower resumes where it was
-  else follower.step(blackL,blackM,blackR,now,pose.yawDegrees,gyroNavigation&&pose.gyro,rangeCm,left,right);
+  else{follower.distCm=pose.dist;follower.step(blackL,blackM,blackR,now,pose.yawDegrees,gyroNavigation&&pose.gyro,rangeCm,left,right);}
   if(follower.requestSignFlip){ // commanded a left pivot but the gyro said right: the gyro sign (GS) is reversed
    follower.requestSignFlip=false;pose.gyroSign=-pose.gyroSign;pose.yawDegrees=-pose.yawDegrees;pose.heading=-pose.heading;
    follower.negateAngles();gyroSignLearned=pose.gyroSign>0?1:-1;gyroSignFlips++;

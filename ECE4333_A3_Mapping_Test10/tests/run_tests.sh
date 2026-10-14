@@ -3,6 +3,7 @@
 set -eu
 root=$(cd "$(dirname "$0")/.." && pwd); tmp=$(mktemp -d); trap 'rm -rf "$tmp"' EXIT
 g++ -std=c++14 -w -I"$root/tests/uno_host_stubs" -I"$root/UNO_Mapping" "$root/tests/uno_protocol_test.cpp" -o "$tmp/proto" && "$tmp/proto" | tail -1
+g++ -std=c++14 -I"$root/UNO_Mapping" "$root/tests/route_hint_test.cpp" -o "$tmp/rh" && "$tmp/rh" | tail -1
 g++ -O2 -std=c++14 -I"$root/UNO_Mapping" "$root/tests/sim_track.cpp" -o "$tmp/sim"
 "$tmp/sim" | tail -1
 "$tmp/sim" --stress | tail -1

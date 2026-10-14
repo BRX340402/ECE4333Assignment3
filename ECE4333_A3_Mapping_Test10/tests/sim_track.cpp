@@ -69,7 +69,7 @@ struct Track{
     d=sqrt(bd);return best;}
 };
 
-struct Params{double d,w,F,kv,R;bool gyro;double asym,B,DB;int cruise;double noise=0,gscale=1.01;bool inverted=false;};
+struct Params{double d,w,F,kv,R;bool gyro;double asym,B,DB;int cruise;double noise=0,gscale=1.01;bool inverted=false;double odo=1.10;};
 struct Result{bool pass;int laps;double maxDev;int fault;double t;int crosses,turns,searches;std::string why;};
 
 bool TRACE=false;
@@ -92,6 +92,9 @@ Result run(const Params&p,unsigned seed,FILE*dump=nullptr){
     bool bl=blk(p.d),bm=blk(0),br=blk(-p.d);
     if(p.noise>0){std::uniform_real_distribution<double> u(0,1);if(u(rng)<p.noise)bl=!bl;if(u(rng)<p.noise)bm=!bm;if(u(rng)<p.noise)br=!br;}
     mask|=(bl?1:0)|(bm?2:0)|(br?4:0)|((bl&&bm&&br)?8:0);
+    // UNO odometer (PWM x speed factor). The factor is calibrated on the real car (Test10 run 3:
+    // 859 vs 859.6 cm per lap); here it is the true distance with a deliberate error (default +10 %).
+    f.distCm=(float)(travelled*p.odo);
     f.step(bl,bm,br,now,(float)(gsign*gyroYaw),p.gyro,-1,L,Rr);
     if(f.requestSignFlip){gsign=-gsign;f.negateAngles();f.requestSignFlip=false;flips++;}
     static int prevState=-1;
@@ -138,7 +141,7 @@ int main(int argc,char**argv){
     std::mt19937 g(12345);std::uniform_real_distribution<double> U(0,1);int n=0,ok=0;
     for(int i=0;i<400;i++){
       Params p;p.d=1.0+U(g)*1.0;p.w=std::max(p.d*1.0,1.8)+U(g)*1.5;p.F=9+U(g)*6;p.kv=0.2+U(g)*0.3;p.R=U(g)<0.5?0:U(g)*10;p.gyro=true;
-      p.asym=0.85+U(g)*0.15;if(U(g)<0.5)p.asym=1/p.asym;p.B=20+U(g)*15;p.DB=20+U(g)*20;p.cruise=50+(int)(U(g)*40);p.noise=U(g)*0.01;p.gscale=0.95+U(g)*0.1;
+      p.asym=0.85+U(g)*0.15;if(U(g)<0.5)p.asym=1/p.asym;p.B=20+U(g)*15;p.DB=20+U(g)*20;p.cruise=50+(int)(U(g)*40);p.noise=U(g)*0.01;p.gscale=0.95+U(g)*0.1;p.odo=0.85+U(g)*0.3;
       if(argc>=3&&atoi(argv[2])!=i)continue;
       TRACE=argc>=3;Result r=run(p,1000+i);n++;ok+=r.pass;
       if(!r.pass)printf("#%d FAIL d=%.2f w=%.2f F=%.1f kv=%.2f R=%.1f asym=%.2f B=%.0f DB=%.0f cruise=%d noise=%.3f gs=%.2f: %s laps=%d t=%.0f fault=%d\n",i,p.d,p.w,p.F,p.kv,p.R,p.asym,p.B,p.DB,p.cruise,p.noise,p.gscale,r.why.c_str(),r.laps,r.t,r.fault);}

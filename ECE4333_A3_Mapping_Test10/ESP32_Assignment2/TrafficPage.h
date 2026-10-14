@@ -447,6 +447,7 @@ function mapRefresh(force){
  $('mapStatus').textContent='Recorded '+mapLines.length+' lines / '+mapSamples.length+' samples on this tablet'+
   (mapLost?' | LOST '+mapLost+' (offline > ~3 min)':' | nothing lost')+' | last contact '+age+' s ago'+
   (live?' | car: '+(live.mode===6?'AUTO '+(st[live.fs]||live.fs):live.mode===5?'MANUAL':'stopped')+', yaw '+live.yaw.toFixed(0)+' deg, L/C/R '+live.L+'/'+live.C+'/'+live.R:'')+
+  (live&&live.mode===6&&mapStatus221&&mapStatus221.SG!=null?' | route: on '+['C-O-D','D-E','E-O-A','A-B','B-C'][mapStatus221.SG]+', next corner '+['D RIGHT','E RIGHT','A LEFT','B LEFT','C LEFT'][mapStatus221.SG]:'')+
   (mapLines.length>mapDownloadedCount?' | NOT downloaded yet':' | downloaded');
  if(mapStoreWarn)$('mapStatus').textContent+=' | '+mapStoreWarn;
  const u=mapStatus221;let g='Gyro: waiting for UNO status';

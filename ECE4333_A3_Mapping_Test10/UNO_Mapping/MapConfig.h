@@ -19,6 +19,9 @@ static const int  WIDE_SEARCH_DEG = 170;    // last-resort sweep amplitude
 static const float NO_GYRO_DEG_PER_MS = 0.12f; // only used if gyro navigation is OFF/unavailable
 static const int  FORWARD_ESTOP_CM = 12;    // 3 consecutive valid readings at/below this latch E-stop
 static const int  CREEP_BLOCK_CM = 15;      // search will not creep forward if an obstacle is this close
+// Fixed-route corner hint (LineFollower::routeHeading): start at C facing D. Set false
+// for a different track or start point; corners then use the sensors only.
+static const bool ROUTE_HINT = true;
 
 // Pose model. Measured on the real car (Test10 run 2): corner C to corner D = 3.2 m in 20 s
 // at PWM 34-50 -> about 0.33 cm/s per PWM. The map still fine-tunes the scale from complete straights.

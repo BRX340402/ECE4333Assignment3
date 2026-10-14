@@ -40,9 +40,31 @@ struct LineFollower {
  uint32_t tNarrow=0,tWide=0;bool wide=false;
  uint32_t leftOnAt=0,rightOnAt=0;bool prevL=false,prevR=false,leftEver=false,rightEver=false; // rising edges; *Ever never cleared mid-run
  bool classified()const{return tNarrow+tWide>=1000;}
+ // Route hint. The track is fixed: start at C facing D with yaw and distance zeroed at
+ // Start, so every straight has a known heading (unwrapped; a figure-8 lap ends back at 0)
+ // and length, and the next corner's direction is known. Only used when the sensors cannot
+ // tell - both sides saw tape just before the line ended (the tape blob at a sharp corner's
+ // apex: Test10 run 4 took the left branch at D this way) - and only in the last 30 % of a
+ // straight, so the crossing and mid-straight wobbles keep the sensor rule.
+ // seg advances when the learned line heading matches the next straight and at least half
+ // of the current straight has been driven (a short corner overshoot cannot skip a straight).
+ bool route=true;uint8_t seg=0;float distCm=0,segStart=0; // distCm: odometer, set by the owner every step
+ static float routeHeading(uint8_t k){switch(k){case 1:return -136.6f;case 2:return -240.0f;case 3:return -210.0f;case 4:return -120.0f;default:return 0.0f;}}
+ static float routeLength(uint8_t k){switch(k){case 1:return 151.0f;case 2:return 220.0f;case 3:return 43.0f;case 4:return 125.0f;default:return 320.0f;}}
+ uint8_t nextSeg()const{return seg>=4?0:seg+1;}
+ int8_t routeSide()const{
+  if(!route||!gyroOK||distCm-segStart<0.7f*routeLength(seg))return 0;
+  float d=norm180(routeHeading(nextSeg())-yawNow);
+  return d>20?1:(d< -20?-1:0);
+ }
+ void routeUpdate(){
+  if(!route||distCm-segStart<0.5f*routeLength(seg))return;
+  uint8_t n=nextSeg();float dn=fabsf(norm180(refYaw-routeHeading(n)));
+  if(dn<25&&dn<fabsf(norm180(refYaw-routeHeading(seg)))){seg=n;segStart=distCm;}
+ }
 
  static float norm180(float a){a=fmodf(a+180.0f,360.0f);if(a<0)a+=360.0f;return a-180.0f;}
- void start(float yaw,uint32_t now){requestSignFlip=false;tNarrow=tWide=0;wide=false;leftEver=rightEver=prevL=prevR=false;state=FOLLOW;fault=NONE;yawNow=yaw;refYaw=yaw;lastMs=now;rot=0;lastSide=0;enterFollow(now);centerAt=lineAt=now;}
+ void start(float yaw,uint32_t now){requestSignFlip=false;seg=0;segStart=distCm;tNarrow=tWide=0;wide=false;leftEver=rightEver=prevL=prevR=false;state=FOLLOW;fault=NONE;yawNow=yaw;refYaw=yaw;lastMs=now;rot=0;lastSide=0;enterFollow(now);centerAt=lineAt=now;}
  void stop(){state=IDLE;rot=0;}
  void fail(uint8_t why){if(state==FAIL)return;faultState=state;fault=why;state=FAIL;}
  void enterFollow(uint32_t now,bool keepSides=false){state=FOLLOW;at=followAt=now;if(!keepSides)leftSeen=rightSeen=false;edgeActive=false;confirming=false;}
@@ -52,17 +74,17 @@ struct LineFollower {
  // long time; the outgoing line of a corner shows up as a fresh onset on the other side.
  int8_t recentSide(uint32_t now)const{
   bool l=leftEver&&uint32_t(now-leftAt)<SIDE_MEMORY_MS,r=rightEver&&uint32_t(now-rightAt)<SIDE_MEMORY_MS;
-  if(l&&r)return int32_t(leftOnAt-rightOnAt)>=0?1:-1;
+  if(l&&r){int8_t h=routeSide();if(h)return h;return int32_t(leftOnAt-rightOnAt)>=0?1:-1;}
   return l?1:(r?-1:0);
  }
  void enterTurn(int8_t dir,uint32_t now){state=TURN;turnDir=dir;origin=yawNow;at=now;confirming=false;flipped=false;events|=EV_TURN;}
- void enterSearch(uint32_t now){state=SEARCH;origin=yawNow;phase=0;at=now;confirming=false;searchPref=recentSide(now);if(!searchPref)searchPref=lastSide?lastSide:1;events|=EV_SEARCH;}
+ void enterSearch(uint32_t now){state=SEARCH;origin=yawNow;phase=0;at=now;confirming=false;searchPref=recentSide(now);if(!searchPref)searchPref=routeSide();if(!searchPref)searchPref=lastSide?lastSide:1;events|=EV_SEARCH;}
  void pivotOut(int8_t dir,int &l,int &r)const{l=-dir*pivot;r=dir*pivot;}
  // centre found a line candidate: confirm for CONFIRM_MS, then follow it
  bool accept(bool ok,uint32_t now){
   if(!ok){confirming=false;return false;}
   if(!confirming){confirming=true;confirmAt=now;}
-  if(uint32_t(now-confirmAt)>=CONFIRM_MS){refYaw=yawNow;enterFollow(now);return true;}
+  if(uint32_t(now-confirmAt)>=CONFIRM_MS){refYaw=yawNow;routeUpdate();enterFollow(now);return true;}
   return false;
  }
 
@@ -105,7 +127,7 @@ struct LineFollower {
     left=right=cruise;
     // learn the line direction while centred (time constant ~0.25 s)
     bool centred=wide?(bl&&br):(!bl&&!br);
-    if(centred&&uint32_t(now-followAt)>=SETTLE_MS){float a=dtMs/250.0f;if(a>1)a=1;refYaw+=norm180(yawNow-refYaw)*a;}
+    if(centred&&uint32_t(now-followAt)>=SETTLE_MS){float a=dtMs/250.0f;if(a>1)a=1;refYaw+=norm180(yawNow-refYaw)*a;routeUpdate();}
    }
    return;
   }
