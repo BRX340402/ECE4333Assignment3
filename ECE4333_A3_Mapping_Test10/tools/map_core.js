@@ -1,6 +1,6 @@
 /*MAPCORE - same algorithm as PC_Mapping/draw_map.py (kept in sync; tested by tests/test_map_core.js)*/
 const MAPREF0=[{name:'C-O-D',h:0,len:320},{name:'D-E',h:-136.6,len:151.3},{name:'E-O-A',h:-240,len:220},{name:'A-B',h:-210,len:43.3},{name:'B-C',h:-120,len:125}];
-const MAPCOL={1:'#2a7de1',2:'#f08c00',3:'#d6336c',4:'#ae3ec9',5:'#000000'};
+const MAPCOL={1:'#2a7de1',2:'#f08c00',3:'#d6336c',4:'#ae3ec9',5:'#000000',6:'#ff8fab'};
 function mapDecode(d){const st=d[13],k=d[14];return{q:d[0],t:d[1],L:d[2],C:d[3],R:d[4],PL:d[5],PR:d[6],g:d[7]/10,yaw:d[8]/10,dist:d[9]/10,x:d[10],y:d[11],u:d[12],mode:st>>4,fs:st&7,gy:(st>>3)&1,k:k};}
 function mapRuns(S){const runs=[];let cur=[],p=null;
  for(const r of S){if(r.mode!==6){if(cur.length)runs.push(cur);cur=[];p=null;continue;}
@@ -11,6 +11,9 @@ function mapStraight(run,yaw,dist){
  while(i<N){if(!fwd[i]){i++;continue;}let j=i,sum=yaw[i],c=1;
   while(j+1<N&&fwd[j+1]&&Math.abs(yaw[j+1]-sum/c)<=8){j++;sum+=yaw[j];c++;}
   if(j-i+1>=6)out.push({i0:i,i1:j,head:sum/c,len:dist[j]-dist[i]});i=j+1;}
+ // drop short transitional runs (heading still settling at the end of a pivot)
+ const maxLen=out.reduce((a,r)=>Math.max(a,r.len),0),minLen=Math.max(12,0.06*maxLen);
+ for(let i=out.length-1;i>=0;i--)if(out[i].len<minLen)out.splice(i,1);
  const m=[];for(const r of out){const L=m[m.length-1];
   if(L&&Math.abs(L.head-r.head)<12){const w0=L.i1-L.i0+1,w1=r.i1-r.i0+1;L.head=(L.head*w0+r.head*w1)/(w0+w1);L.i1=r.i1;L.len=dist[L.i1]-dist[L.i0];}
   else m.push(Object.assign({},r));}
@@ -39,7 +42,10 @@ function mapBuildRun(run,ref,fixedScale){
  segs.forEach((g,k)=>{const prevOk=k>0&&nx(segs[k-1].label)===g.label&&!g.resync,nextOk=k+1<segs.length&&nx(g.label)===segs[k+1].label&&!segs[k+1].resync;
   g.complete=(prevOk||(k===0&&g.label===0))&&nextOk;g.inOrder=prevOk||nextOk||k===0;});
  const comp=segs.filter(g=>g.complete&&g.len>0);let scale,how;
+ const lapEnds=[];for(let k=1;k<segs.length;k++)if(segs[k].label===0&&segs[k-1].label===n-1)lapEnds.push(segs[k].i0);
+ const lapRef=ref.reduce((a,s)=>a+s.len,0),lapMeas=lapEnds.length?dist[lapEnds[lapEnds.length-1]]-dist[0]:0;
  if(fixedScale){scale=fixedScale;how='fixed';}
+ else if(lapEnds.length&&lapMeas>0){scale=lapEnds.length*lapRef/lapMeas;how='auto from '+lapEnds.length+' complete lap(s) ('+(lapEnds.length*lapRef).toFixed(0)+' cm)';}
  else if(comp.length){scale=comp.reduce((a,g)=>a+ref[g.label].len,0)/comp.reduce((a,g)=>a+g.len,0);how='auto from '+comp.length+' complete segment(s)';}
  else{scale=1;how='NOT calibrated yet (needs a straight bounded by two corners) - UNO model units';notes.push('No complete segment yet: drive at least from C past corner E.');}
  const A=[[0,0,0],[0,0,0],[0,0,0]],bb=[0,0,0];let used=0;
@@ -51,7 +57,6 @@ function mapBuildRun(run,ref,fixedScale){
  else{yawc=yaw.slice();gyroTxt='gyro correction: not fitted yet (needs 3 different straight segments)';}
  const xs=[0],ys=[0];
  for(let i=1;i<N;i++){const ds=(dist[i]-dist[i-1])*scale,h=(yawc[i]+yawc[i-1])/2*Math.PI/180;xs.push(xs[i-1]+ds*Math.cos(h));ys.push(ys[i-1]+ds*Math.sin(h));}
- const lapEnds=[];for(let k=1;k<segs.length;k++)if(segs[k].label===0&&segs[k-1].label===n-1)lapEnds.push(segs[k].i0);
  const closure=[];let s0=0;
  for(const e of lapEnds){const ex=xs[e],ey=ys[e];closure.push(Math.hypot(ex,ey));const d0=dist[s0],d1=dist[e],dd=d1>d0?d1-d0:1;
   for(let i=s0;i<N;i++){const f=i>=e?1:(dist[i]-d0)/dd;xs[i]-=ex*f;ys[i]-=ey*f;}s0=e;}

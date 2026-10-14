@@ -18,7 +18,7 @@ Outputs next to the input: map.svg, map_points.csv, segments.csv, summary.txt
 """
 import argparse, csv, json, math, os, sys
 
-STATE_COLORS = {1: "#2a7de1", 2: "#f08c00", 3: "#d6336c", 4: "#ae3ec9", 5: "#000000"}
+STATE_COLORS = {1: "#2a7de1", 2: "#f08c00", 3: "#d6336c", 4: "#ae3ec9", 5: "#000000", 6: "#ff8fab"}
 STATE_NAMES = {1: "FOLLOW", 2: "CROSS hold", 3: "corner TURN", 4: "SEARCH", 5: "FAIL"}
 LABEL_TOL = 14.0  # deg; A-B (-210) and E-O-A (-240) differ by 30
 
@@ -111,6 +111,9 @@ def straight_runs(run, yaw, dist, min_samples=6, tol=8.0):
         if j - i + 1 >= min_samples:
             runs.append({"i0": i, "i1": j, "head": sum(acc) / len(acc), "len_model": dist[j] - dist[i]})
         i = j + 1
+    # drop short transitional runs (heading still settling at the end of a pivot)
+    max_len = max([r["len_model"] for r in runs], default=0)
+    runs = [r for r in runs if r["len_model"] >= max(12.0, 0.06 * max_len)]
     merged = []  # join runs split by a crossing hold / wiggle (same heading)
     for r in runs:
         if merged and abs(merged[-1]["head"] - r["head"]) < 12.0:
@@ -194,8 +197,14 @@ def main():
 
     # ---- 2. scale
     comp = [s for s in segs if s["complete"] and s["len_model"] > 0]
+    lap_ends = [segs[k]["i0"] for k in range(1, len(segs)) if segs[k]["label"] == 0 and segs[k - 1]["label"] == nseg - 1]
+    lap_ref = sum(sg["length_cm"] for sg in ref["segments"])
+    lap_meas = dist[lap_ends[-1]] - dist[0] if lap_ends else 0
     if a.scale:
         scale, how = a.scale, "given on command line"
+    elif lap_ends and lap_meas > 0:
+        scale = len(lap_ends) * lap_ref / lap_meas
+        how = "auto from %d complete lap(s) (%.0f cm)" % (len(lap_ends), len(lap_ends) * lap_ref)
     elif comp:
         scale = sum(ref["segments"][s["label"]]["length_cm"] for s in comp) / sum(s["len_model"] for s in comp)
         how = "auto from %d complete segment(s)" % len(comp)
@@ -236,7 +245,6 @@ def main():
     raw_err = None
 
     # ---- 5. loop closure at every completed lap (entering label 0 after label nseg-1)
-    lap_ends = [segs[k]["i0"] for k in range(1, len(segs)) if segs[k]["label"] == 0 and segs[k - 1]["label"] == nseg - 1]
     if lap_ends and not a.no_closure:
         start_i = 0; cx, cy = 0.0, 0.0
         closure = []

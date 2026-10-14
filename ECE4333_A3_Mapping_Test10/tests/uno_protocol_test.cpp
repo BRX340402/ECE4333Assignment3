@@ -94,5 +94,34 @@ int main(){
  g_analog[A1]=900;runMs(20);bool wasBlack=blackM;g_analog[A1]=590;runMs(20);bool s1=blackM;g_analog[A1]=620;runMs(20);bool s2=blackM;
  g_analog[A1]=540;runMs(20);bool s3=blackM;g_analog[A1]=620;runMs(20);bool s4=blackM;
  CHECK(wasBlack&&s1&&s2&&!s3&&!s4,"line sensor hysteresis (black>=640 to enter, <560 to leave at BL=600)");
+ // ---- Stop on red (RS=1) ----
+ send("{\"N\":100}");runMs(1500);g_analog[A2]=100;g_analog[A1]=900;g_analog[A0]=100;
+ send("{\"N\":206,\"ID\":9,\"SC\":25,\"BL\":600,\"BH\":1023,\"RA\":180,\"SA\":360,\"CT\":1500,\"GS\":1,\"CS\":60,\"RS\":1,\"DS\":30}");runMs(100);
+ send("{\"N\":101,\"D1\":6}");runMs(800);
+ CHECK(mode==6&&traffic.enabled&&g_pwm[MOTOR_LEFT_PWM]>0,"run with Stop on red enabled, driving");
+ Serial.out.clear();
+ send("{\"N\":204,\"S\":11,\"V\":1,\"R\":1,\"G\":0,\"D\":-1,\"SD\":-1,\"B\":0,\"LC\":0}");runMs(100);
+ CHECK(traffic.st==TrafficLite::VERIFY&&g_pwm[MOTOR_LEFT_PWM]==0&&g_pwm[MOTOR_RIGHT_PWM]==0,"red >= RP: car stops (VERIFY)");
+ CHECK(lines("\"TS\":4,\"ID\":1").size()>=1,"TS=4 + request ID sent at once so the ESP32 starts the STOP AI");
+ send("{\"N\":205,\"S\":1,\"ID\":1,\"V\":1,\"P\":900}");runMs(50);send("{\"N\":205,\"S\":2,\"ID\":1,\"V\":1,\"P\":850}");runMs(50);
+ CHECK(traffic.st==TrafficLite::HOLD&&g_pwm[MOTOR_LEFT_PWM]==0,"2 STOP-sign AI hits: 3 s hold");
+ runMs(3200);
+ CHECK(traffic.st==TrafficLite::CLEARING&&g_pwm[MOTOR_LEFT_PWM]>0,"after 3 s the car drives on");
+ send("{\"N\":204,\"S\":12,\"V\":1,\"R\":1,\"G\":0,\"D\":-1,\"SD\":-1,\"B\":0,\"LC\":0}");runMs(50);
+ CHECK(traffic.st==TrafficLite::CLEARING&&g_pwm[MOTOR_LEFT_PWM]>0,"the same red sign does not stop it again");
+ for(int i=13;i<16;i++){char b[120];snprintf(b,sizeof b,"{\"N\":204,\"S\":%d,\"V\":1,\"R\":0,\"G\":0,\"D\":-1,\"SD\":-1,\"B\":0,\"LC\":0}",i);send(b);runMs(50);}
+ CHECK(traffic.st==TrafficLite::GO,"re-armed after 3 frames without red");
+ send("{\"N\":204,\"S\":20,\"V\":1,\"R\":1,\"G\":0,\"D\":-1,\"SD\":-1,\"B\":0,\"LC\":0}");runMs(50);
+ send("{\"N\":205,\"S\":3,\"ID\":2,\"V\":1,\"P\":0}");runMs(50);send("{\"N\":205,\"S\":4,\"ID\":2,\"V\":1,\"P\":0}");runMs(50);
+ CHECK(traffic.st==TrafficLite::WAIT_GREEN&&g_pwm[MOTOR_LEFT_PWM]==0,"red light (AI says not STOP): wait for green");
+ send("{\"N\":204,\"S\":21,\"V\":1,\"R\":0,\"G\":1,\"D\":-1,\"SD\":-1,\"B\":0,\"LC\":0}");runMs(50);
+ CHECK(traffic.st==TrafficLite::WAIT_GREEN,"one green frame is not enough");
+ send("{\"N\":204,\"S\":22,\"V\":1,\"R\":0,\"G\":1,\"D\":-1,\"SD\":-1,\"B\":0,\"LC\":0}");runMs(100);
+ CHECK(traffic.st==TrafficLite::CLEARING&&g_pwm[MOTOR_LEFT_PWM]>0,"two green frames: drive on");
+ send("{\"N\":100}");runMs(100);
+ send("{\"N\":206,\"ID\":10,\"SC\":25,\"BL\":600,\"BH\":1023,\"RA\":180,\"SA\":360,\"CT\":1500,\"GS\":1,\"CS\":60,\"RS\":0,\"DS\":30}");runMs(100);
+ send("{\"N\":101,\"D1\":6}");runMs(300);
+ send("{\"N\":204,\"S\":30,\"V\":1,\"R\":1,\"G\":0,\"D\":-1,\"SD\":-1,\"B\":0,\"LC\":0}");runMs(100);
+ CHECK(traffic.st==TrafficLite::GO&&g_pwm[MOTOR_LEFT_PWM]>0,"Stop on red OFF: red is ignored (mapping only)");
  printf(fails?"\n%d FAILED\n":"\nALL UNO PROTOCOL CHECKS PASSED\n",fails);return fails?1:0;
 }

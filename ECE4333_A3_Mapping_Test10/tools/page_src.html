@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ECE 4333 Robot Car Test10</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#101722;color:#edf3fa;font:16px system-ui,sans-serif}
+main{max-width:980px;margin:auto;padding:0 18px 40px}
+.topbar{position:sticky;top:0;z-index:5;background:#0d141f;border-bottom:1px solid #2a3a4f;padding:10px 18px 0}
+.topbar>*{max-width:944px;margin-left:auto;margin-right:auto}
+.toprow{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+h1{font-size:22px;margin:4px 0}h1 small{color:#8fa6bf;font-weight:500}h2{font-size:19px;margin:0 0 12px}
+.pill{background:#1c2939;border:1px solid #3a4f68;border-radius:999px;padding:6px 12px;font-size:14px}
+.actions,nav{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.actions{margin:8px 0}
+section,details{background:#1c2939;border:1px solid #304156;border-radius:12px;padding:16px;margin:14px 0}
+button,input,select{font:inherit;border:1px solid #52677f;border-radius:8px;padding:9px 12px;background:#26394e;color:#fff}
+button{cursor:pointer;min-height:44px}button:disabled{opacity:.5;cursor:default}button.primary{background:#287b67;border-color:#3fa98e}.danger{background:#bd3b3b;border-color:#e06060}
+button.big{font-size:18px;font-weight:700;padding:12px 22px}
+nav{margin:6px 0 0;gap:4px}nav button{border-radius:10px 10px 0 0;border-bottom:none;background:#1c2939;min-width:120px}
+nav button[aria-selected=true]{background:#287b67;border-color:#55baa2}
+label{display:block;margin:12px 0}input[type=number]{width:110px}input[type=checkbox]{width:auto;transform:scale(1.3);margin-right:8px}
+p{line-height:1.5;margin:10px 0}.hint,small{color:#b5c5d8}#message,#cal{color:#ffcf91;min-height:22px;overflow-wrap:anywhere;margin:4px 0 8px}
+#live{display:block;width:100%;height:auto;min-height:180px;background:#080d15;border-radius:8px}
+table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:10px 5px;text-align:left;border-bottom:1px solid #354459}th{color:#b5c5d8;font-weight:500}
+summary{cursor:pointer;font-weight:600}a{color:#8cd7ff}.tablewrap{overflow:auto}#savedCal{white-space:pre-wrap;font-size:14px;line-height:1.7}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:6px 0 10px}.stats>div{background:#132031;border:1px solid #2c3f56;border-radius:10px;padding:10px}
+.stats .num{display:block;font-size:28px;font-weight:700}.stats small{display:block}.red{color:#ff7b7b}.ok{color:#5be3a8}
+.drivepad{display:grid;grid-template-columns:repeat(3,70px);gap:8px;margin:10px 0}.drivepad button{touch-action:none;user-select:none;min-height:60px;font-size:22px}
+[hidden]{display:none!important}
+@media(max-width:620px){main{padding:0 10px 30px}.topbar{padding:8px 10px 0}nav button{min-width:0;flex:1;padding:9px 6px}.stats{grid-template-columns:1fr 1fr}td,th{padding:9px 3px;font-size:12px}}
+</style></head><body>
+<div class="topbar">
+<div class="toprow"><h1>Robot Car <small>Test10</small></h1><span id="runState" class="pill">Connecting…</span></div>
+<div class="actions"><button class="danger big" onclick="stopCar()">STOP CAR 停车</button><button class="primary big" onclick="startCar()">Start 开始</button><button class="danger" onclick="emergencyStop()">E-STOP 急停</button><button onclick="clearEStop()">Reset E-stop 复位</button></div>
+<p id="message" role="status"></p>
+<nav role="tablist"><button id="driveTab" role="tab" aria-selected="true" onclick="switchTab('drive')">行驶 Drive</button><button id="mapTab" role="tab" aria-selected="false" onclick="switchTab('map')">地图 Map</button><button id="cameraTab" role="tab" aria-selected="false" onclick="switchTab('camera')">摄像头 Camera</button><button id="setupTab" role="tab" aria-selected="false" onclick="switchTab('setup')">设置 Settings</button></nav>
+</div>
+<main>
+<div id="drivePanel" role="tabpanel">
+<!--GYROSECTION-->
+<section><h2>Stop on red 遇红停车</h2>
+<div class="stats"><div><span class="num" id="redNow">—</span><small>Red pixels now 当前红色像素</small></div><div><span class="num" id="rpNow">—</span><small>Threshold RP 阈值</small></div><div><span class="num" id="trafficNow" style="font-size:18px">—</span><small>Traffic state 状态</small></div></div>
+<label><input id="RS" type="checkbox" onchange="saveSettings()">Stop on red 遇红停车</label>
+<label>Red pixel threshold RP 红色像素阈值 <input id="RP" onchange="saveSettings()" type="number" min="0" max="160000" value="100"></label>
+<p class="hint">ON: while following the line, when the red region reaches RP pixels the car stops and the camera checks for a STOP sign. STOP sign (2 AI hits) → stand 3 s, then go on. Not a STOP sign (red light) → wait for 2 green frames. After driving on, the same red is ignored until it has left the view. OFF: red is ignored (pure mapping). Tune RP with the live number above: hold the red target where the car should stop and read the pixels. Changing a value stops the car and saves.</p>
+<p class="hint">开启后：循迹时红色区域达到 RP 像素就停车，并用 AI 判断是否 STOP 牌：是 STOP 牌就停 3 秒后继续；不是（红灯）就等两帧绿灯再走。重新出发后，同一个红色目标离开视野前不会再触发。把红色目标放在希望停车的位置，看上面的实时像素数来设定 RP。修改设置会先停车再保存。</p>
+</section>
+<section><h2>Speed 速度</h2>
+<label>Cruise PWM 巡航速度 (50–150) <input id="CS" onchange="$('DS').value=Math.min(Number($('DS').value),Number(this.value));saveSettings()" type="number" min="50" max="150" value="60"></label>
+<p class="hint">Corners pivot at PWM 100. 55–70 recommended. 转角固定用 PWM 100 原地转；巡航建议 55–70。</p>
+<p id="applied" class="hint"></p></section>
+<details><summary>Manual movement 手动驾驶</summary><label>Speed <input id="speed" type="number" value="60" min="0" max="180"></label><p class="hint">Hold an arrow to move; release to stop. 按住箭头移动，松开停车。</p><div class="drivepad"><span></span><button data-dir="1">↑</button><span></span><button data-dir="3">←</button><button class="danger" onclick="stopCar()">■</button><button data-dir="4">→</button><span></span><button data-dir="2">↓</button></div></details>
+</div>
+<div id="mapPanel" role="tabpanel" hidden>
+<!--MAPSECTION-->
+</div>
+<div id="cameraPanel" role="tabpanel" hidden>
+<section><div style="position:relative"><img id="live" width="320" height="240" alt="Live camera — connecting"><div id="boxes" style="position:absolute;inset:0;pointer-events:none"></div></div><small id="previewState">Connecting camera…</small> <button id="togglePreview" onclick="togglePreview()">Pause preview</button>
+<div class="tablewrap"><table><thead><tr><th>Target</th><th>Detected</th><th>Pixels 像素</th><th>Width (px)</th><th>Distance (cm)</th></tr></thead><tbody>
+<tr><td>Red 红</td><td id="redSeen">—</td><td id="redPixels">—</td><td id="redWidth">—</td><td id="redDistance">—</td></tr>
+<tr><td>Green 绿</td><td id="greenSeen">—</td><td id="greenPixels">—</td><td id="greenWidth">—</td><td id="greenDistance">—</td></tr>
+<tr><td>STOP sign</td><td id="stopSeen">—</td><td id="stopPixels">—</td><td id="stopWidth">—</td><td id="stopDistance">—</td></tr>
+</tbody></table></div><small>Pixels = coloured area (compare with RP). The preview only streams while this tab is open; detection keeps running in the background. 画面只在本页打开时传输，识别始终在后台运行。</small>
+<p id="visionHealth" class="hint"></p></section>
+<section><h2>Camera settings</h2><p class="hint">Changing settings stops the car.</p>
+<label><input id="detect" type="checkbox" checked onchange="setDetection('detect',this.checked)">STOP AI (96×96)</label>
+<label><input id="color" type="checkbox" checked onchange="setDetection('color',this.checked)">Red / green detection 红绿识别</label>
+<label>Resolution <select id="framesize" onchange="setCamera('framesize',this.value)"><option value="0">QQVGA 160×120</option><option value="3">HQVGA 240×176</option><option value="4">QVGA 320×240</option><option value="5">CIF 400×296</option><option value="6">VGA 640×480</option><option value="7" selected>SVGA 800×600</option><option value="8">XGA 1024×768</option><option value="9">SXGA 1280×1024</option><option value="10">UXGA 1600×1200</option></select></label>
+<label>White balance <select id="wb_mode" onchange="setCamera('wb_mode',this.value)"><option value="0">Auto (0)</option><option value="1">Sunny (1)</option><option value="2">Cloudy (2)</option><option value="3">Office (3)</option><option value="4">Home (4)</option></select></label>
+<label><input id="awb" type="checkbox" checked onchange="setCamera('awb',+this.checked)">Automatic white balance</label>
+<label><input id="awb_gain" type="checkbox" checked onchange="setCamera('awb_gain',+this.checked)">White balance gain</label>
+<label>Brightness <select id="brightness" onchange="setCamera('brightness',this.value)"><option>-2</option><option>-1</option><option selected>0</option><option>1</option><option>2</option></select></label>
+<label>Contrast <select id="contrast" onchange="setCamera('contrast',this.value)"><option>-2</option><option>-1</option><option selected>0</option><option>1</option><option>2</option></select></label>
+<label>Saturation <select id="saturation" onchange="setCamera('saturation',this.value)"><option>-2</option><option>-1</option><option selected>0</option><option>1</option><option>2</option></select></label>
+<label><input id="vflip" type="checkbox" onchange="setCamera('vflip',+this.checked)">Flip vertically</label><label><input id="hmirror" type="checkbox" onchange="setCamera('hmirror',+this.checked)">Mirror horizontally</label>
+<details><summary>Exposure, gain and advanced</summary>
+<label>JPEG quality <input id="quality" type="number" min="10" max="63" value="10"><button onclick="setCamera('quality',$('quality').value)">Apply</button></label>
+<label><input id="aec" type="checkbox" checked onchange="setCamera('aec',+this.checked)">Auto exposure</label>
+<label><input id="aec2" type="checkbox" onchange="setCamera('aec2',+this.checked)">DSP exposure</label>
+<label>Exposure level <select id="ae_level" onchange="setCamera('ae_level',this.value)"><option>-2</option><option>-1</option><option selected>0</option><option>1</option><option>2</option></select></label>
+<label>Manual exposure <input id="aec_value" type="number" min="0" max="1200" value="300"><button onclick="setCamera('aec_value',$('aec_value').value)">Apply</button></label>
+<label><input id="agc" type="checkbox" checked onchange="setCamera('agc',+this.checked)">Auto gain</label>
+<label>Manual gain <input id="agc_gain" type="number" min="0" max="30" value="0"><button onclick="setCamera('agc_gain',$('agc_gain').value)">Apply</button></label>
+<label>Gain ceiling <select id="gainceiling" onchange="setCamera('gainceiling',this.value)"><option value="0">2×</option><option value="1">4×</option><option value="2">8×</option><option value="3">16×</option><option value="4">32×</option><option value="5">64×</option><option value="6">128×</option></select></label>
+<label>Effect <select id="special_effect" onchange="setCamera('special_effect',this.value)"><option value="0">None</option><option value="1">Negative</option><option value="2">Grayscale</option><option value="3">Red tint</option><option value="4">Green tint</option><option value="5">Blue tint</option><option value="6">Sepia</option></select></label>
+<label><input id="bpc" type="checkbox" onchange="setCamera('bpc',+this.checked)">Black pixel correction</label>
+<label><input id="wpc" type="checkbox" onchange="setCamera('wpc',+this.checked)">White pixel correction</label>
+<label><input id="raw_gma" type="checkbox" onchange="setCamera('raw_gma',+this.checked)">Gamma</label>
+<label><input id="lenc" type="checkbox" onchange="setCamera('lenc',+this.checked)">Lens correction</label>
+<label><input id="dcw" type="checkbox" onchange="setCamera('dcw',+this.checked)">Downsize</label>
+<label>Model view <select id="view_mode" onchange="setCamera('view_mode',this.value)"><option value="1">Centre crop (trained)</option><option value="0">Full image letterbox</option><option value="2">2× crop</option><option value="3">4× crop</option></select></label>
+<label>AI threshold (%) <input id="threshold" type="number" min="50" max="99" value="70"><button onclick="setCamera('threshold',$('threshold').value)">Apply</button></label>
+<label><input id="colorbar" type="checkbox" onchange="setCamera('colorbar',+this.checked)">Sensor test colour bars (turn off before driving)</label>
+<p id="cameraInfo" class="hint">Read actual camera settings to see uptime and frame age.</p>
+</details>
+<div class="actions"><button onclick="loadCamera()">Read actual camera settings</button><button id="restoreDefaults" onclick="restoreCameraDefaults()">Restore SVGA defaults (restarts ESP32)</button></div>
+<button id="capture" onclick="captureNew()">Capture training photo</button><span id="captureState"></span><p id="downloads" hidden><a id="jpgLink">Open original JPEG</a> · <a id="bmpLink">Model input BMP</a></p>
+</section>
+<details><summary>Distance calibration 距离标定 (optional)</summary><p>Stop the car. Select a target, scan its width, enter the measured camera-to-target distance, then save. Not needed for Stop on red (it uses RP pixels).</p>
+<label>Target <select id="profile" onchange="resetSample()"><option value="light">Red</option><option value="green">Green</option><option value="stop">STOP sign</option></select></label>
+<label>Scanned width (px) <input id="width" readonly> / image <input id="image_w" readonly></label>
+<label>Measured distance (cm) <input id="cm" type="number" min="5" max="300" value="30"></label>
+<div class="actions"><button onclick="sampleWidth()">Scan target width</button><button id="saveCal" onclick="calibrate()" disabled>Save measured distance</button><button onclick="clearCalibration()">Clear selected target</button></div><p id="cal" role="status"></p><p id="sampleInfo" class="hint"></p><div id="savedCal">Loading calibration…</div></details>
+</div>
+<div id="setupPanel" role="tabpanel" hidden>
+<section><h2>Line sensors 地面传感器</h2><p id="floor">Waiting for floor sensors…</p>
+<label>Black range 黑线范围 <input id="BL" type="number" min="0" max="1022" value="600"> to <input id="BH" type="number" min="1" max="1023" value="1023"></label>
+<div class="actions"><button onclick="sampleFloor('white')">Sample white floor 采白地</button><button onclick="sampleFloor('black')">Sample black line 采黑线</button><button onclick="applyFloor()">Apply measured threshold 应用</button></div>
+<p id="floorCal" class="hint">Stop the car. Put ALL three sensors over each surface in turn at normal ride height. Each sample takes 6 fresh readings. The UNO adds ±40 hysteresis around the threshold.</p></section>
+<section><h2>Gyroscope 陀螺仪</h2>
+<label>Gyro Z sign 陀螺仪方向 <select id="GS"><option value="0">Negative raw Z = left</option><option value="1">Positive raw Z = left</option></select></label>
+<p class="hint">Turning the car LEFT must make the yaw on the Drive tab INCREASE. Your car (GY-521 chip up): Positive raw Z = left. 车向左转时“行驶”页的航向应增大；你的车应选 Positive raw Z = left。</p></section>
+<div hidden><input id="DS" type="number" value="40"><input id="SC" type="number" value="25"><input id="RA" type="number" value="180"><input id="SA" type="number" value="360"><input id="CT" type="number" value="1500"></div>
+<button class="primary" onclick="saveSettings()">Save car settings 保存设置</button><p id="applied2" class="hint"></p>
+</div>
+</main>
+<script>
+const $=id=>document.getElementById(id),names=['OFF 停止','—','TRACK 循迹','—','RED: CHECKING STOP 红色·识别中','WAIT FOR GREEN 等绿灯','STOP SIGN 3 s 停车','CROSSING 交叉口','FAULT 故障'];
+const keys=['SC','BL','BH','RA','SA','CT','GS','CS','DS','RP'],TABS=['drive','map','camera','setup'];let driving=false,latest=null,scannedToken=null,sampleResolution=null,currentTab='drive',previewTimer=null,manualHeld=false,previewBusy=false,previewPaused=false,previewURL=null,previewStamp='',previewLastShown=0,cameraBusy=false,starting=false;
+let floorSamples={},floorSampling=false;
+async function sampleFloor(kind){
+ if(floorSampling)return;floorSampling=true;
+ try{const rows=[];let prev=null;
+ for(let n=0;n<30&&rows.length<6;n++){
+  const d=JSON.parse(await request('/traffic-status')),u=d.uno||{};
+  if(d.age_ms>=1500||u.M!==0||u.PL!==0||u.PR!==0)throw Error('Stop the car and wait for fresh UNO OFF telemetry.');
+  if(u.UT!==prev&&[u.L,u.C,u.R].every(Number.isFinite)){rows.push([u.L,u.C,u.R]);prev=u.UT;}
+  if(rows.length<6)await delay(450);
+ }
+ if(rows.length<6)throw Error('Not enough fresh sensor samples.');
+ floorSamples[kind]=rows.flat();$('floorCal').textContent=kind+' captured: '+Math.min(...floorSamples[kind])+' to '+Math.max(...floorSamples[kind]);
+ }catch(e){$('floorCal').textContent=e.message;}finally{floorSampling=false;}
+}
+function floorThreshold(w,b){
+ if(!w?.length||!b?.length)throw Error('Sample both surfaces first.');
+ const wMin=Math.min(...w),wMax=Math.max(...w),bMin=Math.min(...b),bMax=Math.max(...b);
+ if(bMin-wMax>=60)return [Math.round((bMin+wMax)/2),1023];
+ if(wMin-bMax>=60)return [0,Math.round((wMin+bMax)/2)];
+ throw Error('Black/white readings overlap or are less than 60 ADC counts apart. Check height, light and each sensor.');
+}
+async function applyFloor(){try{const [low,high]=floorThreshold(floorSamples.white,floorSamples.black);$('BL').value=low;$('BH').value=high;if(await saveSettings())$('floorCal').textContent='Saved black range '+low+' to '+high+'.';}catch(e){$('floorCal').textContent=e.message;}}
+const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+async function request(url,data){const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),4000);try{const r=await fetch(url,{cache:'no-store',signal:controller.signal,...(data===undefined?{}:{method:'POST',body:new URLSearchParams(data)})});const t=await r.text();if(!r.ok){const e=Error(t);e.status=r.status;throw e;}return t;}finally{clearTimeout(timer);}}
+async function post(url,data={}){return request(url,data);}
+function switchTab(name){if(!TABS.includes(name))name='drive';currentTab=name;for(const t of TABS){$(t+'Panel').hidden=t!==name;$(t+'Tab').setAttribute('aria-selected',String(t===name));}try{localStorage.setItem('a3tab',name);}catch(e){}if(name==='camera'&&!previewPaused){previewStamp='';refreshPreview();}if(name==='map'&&typeof mapRefresh==='function')mapRefresh(true);}
+async function stopCar(){driving=false;manualHeld=false;try{$('message').textContent=await post('/cmd',{action:'stop'});}catch(e){$('message').textContent='STOP was not delivered. Autonomous running may continue; use the physical power switch if needed.';}}
+async function emergencyStop(){driving=false;manualHeld=false;try{$('message').textContent='Emergency stop command sent. Confirm E-stop on this page.';await post('/cmd',{action:'estop'});}catch(e){$('message').textContent='E-stop communication failed! Use physical power switch.';}}
+async function clearEStop(){driving=false;try{await post('/cmd',{action:'clear_estop'});$('message').textContent='Reset requested. Press Start separately.';}catch(e){$('message').textContent=e.message;}}
+async function startCar(){if(starting||settingsBusy){$('message').textContent='Wait for the pending command.';return;}
+ starting=true;
+ try{const wanted=readSettingsForm(),current=JSON.parse(await request('/traffic-settings'));
+ if(!settingsMatch(current,wanted)&&!await saveSettings())return;
+ const before=JSON.parse(await request('/traffic-status'));
+ await post('/traffic-start');let confirmed=false;
+ for(let i=0;i<16;i++){await delay(300);const d=JSON.parse(await request('/traffic-status'));
+ if(d.age_ms<1500&&d.uno?.M===6&&d.uno.RN!==before.uno?.RN){confirmed=true;break;}}
+ if(!confirmed)throw Error('Start confirmation missing; inspect car state before retrying.');
+ driving=true;$('message').textContent='UNO running 运行中';
+ }catch(e){$('message').textContent=e.message;}
+ finally{starting=false;}}
+async function loadSettings(){try{const d=JSON.parse(await request('/traffic-settings'));keys.forEach(k=>$(k).value=d[k]);$('RS').checked=!!d.RS;}catch(e){$('message').textContent=e.message;}}
+let settingsBusy=false;
+function readSettingsForm(){const d={};keys.forEach(k=>{const n=Number($(k).value);if(!Number.isInteger(n))throw Error('Use whole numbers');d[k]=n;});d.RS=+$('RS').checked;return d;}
+function settingsMatch(current,wanted){return !!current.applied&&[...keys,'RS'].every(k=>Number(current[k])===wanted[k]);}
+async function saveSettings(){if(settingsBusy)return false;settingsBusy=true;driving=false;manualHeld=false;$('RS').disabled=$('CS').disabled=$('RP').disabled=true;
+ try{const wanted=readSettingsForm();$('applied').textContent=$('applied2').textContent='Stopping car and applying settings…';
+ await post('/cmd',{action:'stop'});
+ let saved=false;for(let n=0;n<16;n++){try{await post('/traffic-settings',wanted);saved=true;break;}catch(e){if(e.status!==409)throw e;await delay(400);}}
+ if(!saved)throw Error('UNO did not acknowledge OFF. Settings not applied.');
+ for(let n=0;n<20;n++){const actual=JSON.parse(await request('/traffic-settings'));if(settingsMatch(actual,wanted)){$('message').textContent=`UNO confirmed 已确认: stop on red ${wanted.RS?'ON':'OFF'}, RP ${wanted.RP} px, cruise PWM ${wanted.CS}, gyro sign ${wanted.GS}, black ${wanted.BL}-${wanted.BH}. Press Start.`;return true;}await delay(400);}
+ throw Error('Settings saved but UNO confirmation missing. Do not start; check the Test10 UNO is uploaded.');
+ }catch(e){$('message').textContent=e.message;return false;}finally{settingsBusy=false;$('RS').disabled=$('CS').disabled=$('RP').disabled=false;}}
+function resetSample(){scannedToken=null;sampleResolution=null;$('width').value='';$('image_w').value='';$('saveCal').disabled=true;$('sampleInfo').textContent='Scan the selected target first.';}
+async function sampleWidth(){resetSample();try{const d=JSON.parse(await post('/traffic-sample',{profile:$('profile').value}));$('width').value=d.width;$('image_w').value=d.image_w;sampleResolution=d.framesize;scannedToken=d.token;$('saveCal').disabled=false;$('sampleInfo').textContent=`Scanned ${d.width} px. Enter the distance and save.`;}catch(e){$('cal').textContent=e.message;}}
+async function calibrate(){try{if(scannedToken===null)throw Error('Scan the target first');$('cal').textContent=await post('/traffic-calibrate',{profile:$('profile').value,cm:$('cm').value,token:scannedToken});scannedToken=null;$('saveCal').disabled=true;}catch(e){$('cal').textContent=e.message;}}
+async function clearCalibration(){try{$('cal').textContent=await post('/traffic-clear',{profile:$('profile').value});resetSample();}catch(e){$('cal').textContent=e.message;}}
+function showSavedCalibration(d){const c=d.calibration||{},labels={light:'Red',green:'Green',stop:'STOP'};$('savedCal').textContent=['light','green','stop'].map(k=>{const v=c[k];return !v||!v.valid?`${labels[k]}: not calibrated`:`${labels[k]}: saved width ${v.width} px / image ${v.image_w} px, measured distance ${v.distance_cm} cm${v.active?'':' (resolution mismatch — rescan)'}`;}).join('\n');}
+function showObjects(objects){for(const k of ['red','green','stop']){const v=objects[k]||{};$(k+'Seen').textContent=!v.valid?'—':v.seen?'Yes':'No';$(k+'Pixels').textContent=v.valid&&v.seen?v.pixels:'—';$(k+'Width').textContent=v.valid&&v.seen&&v.width>0?v.width:'—';$(k+'Distance').textContent=v.valid&&v.seen&&v.distance_cm>=0?v.distance_cm:'—';}}
+const faultReasons={10:'Gyro direction reversed again after auto-correction — check Gyro Z sign (Settings)',11:'Line not found after the full search (too fast / tape too narrow / lifted?)',14:'Obstacle too close for the search creep'};
+function faultMessage(u){const code=Number(u.FC);return code>0?`FAULT ${code} — ${faultReasons[code]||'Unknown fault'}. Press STOP CAR, fix the cause, place the car on the line, then Start.`:'FAULT — press STOP CAR before restarting.';}
+async function poll(){try{const d=JSON.parse(await request('/traffic-status'));if(latest&&d.esp_ms<latest.esp_ms)$('message').textContent='ESP32 restart detected.';latest=d;
+ const o=d.objects||{},u=d.uno||{},c=d.settings||{},red=o.red||{};
+ showObjects(o);boxObjects=o;boxesAt=Date.now();drawBoxes();showSavedCalibration(d);
+ const vh=d.vision_health||{};$('visionHealth').textContent=`Colour frame age: ${vh.age_ms??'—'} ms | Red regions: ${vh.red_regions??'—'} | Green regions: ${vh.green_regions??'—'} | Colour processing: ${vh.processing_ms??'—'} ms | STOP inference: ${o.stop?.inference_ms??'—'} ms`;
+ const px=red.valid&&red.seen?Number(red.pixels):0,rp=Number(c.RP);
+ $('redNow').textContent=red.valid?px:'—';$('redNow').className='num'+(red.valid&&px>=rp&&rp>=0?' red':'');$('rpNow').textContent=Number.isFinite(rp)?rp:'—';
+ const stale=d.age_ms>=1500;
+ $('trafficNow').textContent=stale?'—':(u.M===6?(names[u.TS]||'—'):u.M===5?'MANUAL 手动':'OFF 停止');
+ $('runState').textContent=!stale?(Number(u.UV)===40?(u.M===6?(names[u.TS]||'RUNNING'):u.M===5?'Manual 手动':'Stopped 已停止')+(u.ES?' · E-STOP':''):'UNO VERSION MISMATCH — upload Test10 UNO_Mapping'):'UNO telemetry stale — motor state unknown';
+ $('floor').textContent=`Live floor sensors 实时读数 L ${u.L??'—'} · M ${u.C??'—'} · R ${u.R??'—'} | threshold ${c.BL??'—'}–${c.BH??'—'}`;
+ const ap=settingsBusy?'Applying settings…':c.applied?`UNO confirmed 已确认: stop on red ${c.RS?'ON':'OFF'} · RP ${c.RP} px · cruise PWM ${c.CS} · gyro sign ${c.GS}`:'Waiting for UNO settings confirmation';$('applied').textContent=$('applied2').textContent=ap;
+ $('detect').checked=!!d.detect_enabled;$('color').checked=!!d.color_enabled;
+ if(u.TS===8){driving=false;$('message').textContent=faultMessage(u);}
+ if(scannedToken!==null&&sampleResolution!==d.framesize)resetSample();
+ }catch(e){showObjects({});boxObjects={};drawBoxes();$('runState').textContent='Web connection lost — motor state unknown';}finally{setTimeout(poll,500);}}
+async function heartbeat(){try{if(manualHeld)await post('/cmd',{action:'ping'});}catch(e){driving=false;manualHeld=false;$('message').textContent='Manual control connection lost; manual driving will time out.';}finally{setTimeout(heartbeat,300);}}
+let boxObjects={},boxesAt=0;
+function drawBoxes(){
+ const layer=$('boxes');layer.innerHTML='';
+ if(currentTab!=='camera'||previewPaused||!previewStamp||Date.now()-previewLastShown>1500||Date.now()-boxesAt>1500)return;
+ for(const k of ['red','green','stop']){const v=boxObjects[k];
+  if(!v?.box_valid||!(v.image_w>0&&v.image_h>0&&v.w>0&&v.h>0))continue;
+  const age=Math.abs((Number(previewStamp)-Number(v.captured))|0);if(age>(k==='stop'?5000:1200))continue;
+  const x=Math.max(0,v.x),y=Math.max(0,v.y),w=Math.min(v.w,v.image_w-x),h=Math.min(v.h,v.image_h-y);if(w<=0||h<=0)continue;
+  const el=document.createElement('div');el.style.cssText=`position:absolute;left:${100*x/v.image_w}%;top:${100*y/v.image_h}%;width:${100*w/v.image_w}%;height:${100*h/v.image_h}%;border:2px solid ${k==='red'?'#ff4545':k==='green'?'#39ff88':'#ffcf40'};color:white;font:bold 12px sans-serif;box-sizing:border-box`;
+  const label=document.createElement('span');label.textContent=k==='stop'?'STOP':k.toUpperCase()+(k==='red'&&v.pixels?' '+v.pixels+' px':'');label.style.cssText=`position:absolute;${k==='stop'?'bottom:0':'top:0'};left:0;background:#101722cc;white-space:nowrap`;el.appendChild(label);layer.appendChild(el);
+ }
+}
+async function refreshPreview(){
+ if(previewBusy||previewPaused)return;
+ clearTimeout(previewTimer);
+ if(currentTab!=='camera'){previewTimer=setTimeout(refreshPreview,1000);return;} // no image traffic while driving/mapping
+ previewBusy=true;
+ const started=Date.now(),controller=new AbortController();
+ const timeout=setTimeout(()=>controller.abort(),8000);let nextURL=null;
+ try{
+  const r=await fetch(`http://${location.hostname}:81/preview?after=${encodeURIComponent(previewStamp)}&t=${started}`,{cache:'no-store',signal:controller.signal});
+  if(r.status===204){if(previewLastShown&&Date.now()-previewLastShown>2000)$('previewState').textContent='Waiting for a new frame — last image retained';return;}
+  if(!r.ok)throw Error(`Camera temporarily unavailable (${r.status})`);
+  const blob=await r.blob();if(!blob.size)throw Error('Empty camera frame');
+  nextURL=URL.createObjectURL(blob);
+  const probe=new Image();
+  await new Promise((resolve,reject)=>{probe.onload=resolve;probe.onerror=()=>reject(Error('Incomplete camera frame'));probe.src=nextURL;});
+  if(previewPaused)return;
+  const old=previewURL;$('live').src=nextURL;previewURL=nextURL;nextURL=null;
+  if(old)URL.revokeObjectURL(old);
+  previewStamp=r.headers.get('X-Frame-Stamp')||'';previewLastShown=Date.now();drawBoxes();
+  const age=Number(r.headers.get('X-Frame-Age')||0)+Date.now()-started;
+  $('previewState').textContent=age>2000?'Delayed camera frame — updating…':'Live camera';
+ }catch(e){if(!previewPaused)$('previewState').textContent=previewURL?'Preview paused — last image retained; retrying…':'Waiting for first camera frame…';}
+ finally{if(nextURL)URL.revokeObjectURL(nextURL);clearTimeout(timeout);previewBusy=false;if(!previewPaused)previewTimer=setTimeout(refreshPreview,Math.max(250,Math.min(1500,Date.now()-started)));}
+}
+function previewAge(){drawBoxes();if(currentTab==='camera'&&!previewPaused&&previewLastShown&&Date.now()-previewLastShown>3000)$('previewState').textContent='Preview paused — last image retained; retrying…';setTimeout(previewAge,1000);}
+function togglePreview(){previewPaused=!previewPaused;drawBoxes();$('togglePreview').textContent=previewPaused?'Start preview':'Pause preview';clearTimeout(previewTimer);if(previewPaused)$('previewState').textContent='Preview paused by you — detection continues';else{previewStamp='';refreshPreview();}}
+const cameraNumbers=['framesize','wb_mode','brightness','contrast','saturation','quality','ae_level','aec_value','agc_gain','gainceiling','special_effect','view_mode','threshold'];
+const cameraFlags=['colorbar','awb','awb_gain','aec','aec2','agc','vflip','hmirror','bpc','wpc','raw_gma','lenc','dcw'];
+async function loadCamera(){try{const d=JSON.parse(await request('/status'));for(const k of cameraNumbers)if(d[k]!==undefined)$(k).value=d[k];for(const k of cameraFlags)if(d[k]!==undefined)$(k).checked=!!d[k];if(d.uptime_ms!==undefined)$('cameraInfo').textContent=`Uptime: ${Math.floor(d.uptime_ms/1000)} s | Last camera frame: ${d.preview_age_ms>=0?d.preview_age_ms+' ms ago':'unavailable'} | Frames: ${d.camera_frames??0} | Capture errors: ${d.camera_errors??0} | Sensor ID: ${d.sensor_pid}`;}catch(e){$('message').textContent=e.message;}}
+async function applyCamera(key,value){for(let n=0;n<25;n++){try{return await post('/control',{var:key,val:value});}catch(e){if(e.status!==503||n===24)throw e;await delay(200);}}}
+async function setCamera(key,value){if(cameraBusy){$('message').textContent='Wait for the current camera change to finish.';return;}cameraBusy=true;driving=false;resetSample();try{$('message').textContent=await applyCamera(key,value);if(key==='framesize'){previewStamp='';let completed=false;for(let n=0;n<40;n++){await delay(400);const d=JSON.parse(await request('/resolution-status'));if(d.state==='applied'||d.state==='failed'){$('message').textContent=d.message;completed=true;break;}}if(!completed)throw Error('Resolution is still pending; read camera settings before trying again.');}await loadCamera();}catch(e){$('message').textContent=e.message;}finally{cameraBusy=false;}}
+async function restoreCameraDefaults(){if(cameraBusy)return;cameraBusy=true;driving=false;manualHeld=false;resetSample();$('restoreDefaults').disabled=true;try{$('message').textContent=await post('/camera-defaults');$('previewState').textContent='ESP32 restarting — reconnect Wi-Fi and refresh';previewStamp='';}catch(e){$('message').textContent=e.message;}finally{cameraBusy=false;$('restoreDefaults').disabled=false;}}
+async function setDetection(action,value){driving=false;resetSample();try{$('message').textContent=await post('/cmd',{action,value:value?1:0});}catch(e){$('message').textContent=e.message;}}
+async function captureNew(){await stopCar();$('capture').disabled=true;try{const target=JSON.parse(await post('/snapshot')).id;$('captureState').textContent=' Capturing…';for(let n=0;n<60;n++){await delay(500);const d=JSON.parse(await request('/snapshot'));if(d.id>=target){$('jpgLink').href=`/capture?id=${d.id}&download=1`;$('bmpLink').href=`/model-input?id=${d.id}&download=1`;$('downloads').hidden=false;$('captureState').textContent=' Ready';return;}}throw Error('Capture timed out');}catch(e){$('captureState').textContent=e.message;}finally{$('capture').disabled=false;}}
+for(const button of document.querySelectorAll('[data-dir]')){button.addEventListener('pointerdown',async e=>{e.preventDefault();button.setPointerCapture(e.pointerId);manualHeld=true;try{await post('/cmd',{action:'move',dir:button.dataset.dir,speed:$('speed').value});if(manualHeld)driving=true;else await stopCar();}catch(e){manualHeld=false;$('message').textContent=e.message;}});for(const event of ['pointerup','pointercancel','lostpointercapture'])button.addEventListener(event,()=>{if(manualHeld)stopCar();});}
+window.addEventListener('blur',()=>{if(manualHeld)stopCar();});
+/*MAPJS*/
+let savedTab='drive';try{savedTab=localStorage.getItem('a3tab')||'drive';}catch(e){}
+switchTab(savedTab);refreshPreview();previewAge();loadSettings();loadCamera();poll();heartbeat();
+</script></body></html>

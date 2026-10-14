@@ -1,1 +1,2 @@
-avr-gcc 14.1 + Arduino AVR core 1.8.6 (IDE avr-gcc 7.3 makes smaller code): FLASH 31024 / 32256   RAM(static) 1574 / 2048
+avr-gcc 7.3 (same compiler as Arduino IDE, ~400 B larger than the IDE in a Test9 calibration): FLASH 26792 / 32256   RAM(static) 1454 / 2048
+avr-gcc 14.1 (newer compiler, ~6 KB larger code; for reference only): FLASH 32504 / 32256   RAM(static) 1456 / 2048

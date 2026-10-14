@@ -1,8 +1,8 @@
 #include <Arduino.h>
 // ECE 4333 Assignment 3 - TEST10 MAPPING BUILD (UV=40)
-// Line following + data collection only. Traffic light / STOP sign / AI logic,
-// RGB LED, ultrasonic avoidance and the old floor-tracking modes are removed.
-// For traffic tests, upload the Test9 UNO + ESP32 again (different baud and UV).
+// Line following + data collection + "Stop on red" (TrafficLite: red pixels >= RP stop,
+// STOP-sign AI -> 3 s hold, red light -> wait for green). RGB LED, ultrasonic avoidance
+// and the old floor-tracking modes are removed.
 #include <avr/pgmspace.h>
 #include <Servo.h>
 #include "MapConfig.h"
@@ -10,8 +10,9 @@
 #include "IntegerCommand.h"
 #include "PoseEstimate.h"
 #include "LineFollower.h"
+#include "TrafficLite.h"
 
-PoseEstimate pose;LineFollower follower;Servo pan;
+PoseEstimate pose;LineFollower follower;TrafficLite traffic;Servo pan;
 // mode: 0 standby, 5 manual (web arrows), 6 autonomous mapping run
 uint8_t mode=0;
 bool settingsReady=false,gyroNavigation=true;int configReply=-1;int8_t pendingReply=-1;
@@ -23,7 +24,7 @@ int manualDir=9,speedSetting=90,panAngle=90;uint32_t lastRemote=0,motorsOffSince
 
 // ---------- N230 sample ring (sampled on time, sent when the UART is free) ----------
 struct Sample{uint32_t t;int32_t yaw10,distMm;uint16_t q;int16_t l,c,r,pl,pr,g10,u,x,y;uint8_t st,k;};
-static const uint8_t RING=10;Sample ring[RING];uint8_t ringHead=0,ringCount=0;
+static const uint8_t RING=6;Sample ring[RING];uint8_t ringHead=0,ringCount=0;
 uint16_t sampleSeq=0,droppedSamples=0;uint8_t eventMask=0;uint32_t lastSample=0;
 
 bool black(int v){return v>=blackLow&&v<=blackHigh;}
@@ -44,13 +45,14 @@ void motorOutput(int left,int right){
  if(!left&&!right&&(leftPWM||rightPWM))motorsOffSince=millis();
  leftPWM=left;rightPWM=right;
 }
-void standby(){follower.stop();mode=0;manualDir=9;motorOutput(0,0);}
+void standby(){follower.stop();traffic.reset();mode=0;manualDir=9;motorOutput(0,0);}
 void latchEStop(uint8_t why){standby();eStopLatched=true;eStopReason=why;eventMask|=128;}
 void startRun(){
  runNumber++;mode=6;setPan(90);pose.zero(millis());
  follower.cruise=cruise;follower.pivot=PIVOT_PWM;follower.crossHold=CROSS_HOLD_MS;follower.maxTurn=MAX_CORNER_DEG;
  follower.wideSweep=WIDE_SEARCH_DEG;follower.degPerMs=NO_GYRO_DEG_PER_MS;follower.blockCm=CREEP_BLOCK_CM;
  follower.start(pose.yawDegrees,millis());
+ traffic.reset();traffic.enabled=echoRS==1;
  sampleSeq=0;droppedSamples=0;ringCount=0;lastSample=0;
 }
 void directionPWM(int dir,int speed,int &left,int &right){
@@ -67,7 +69,16 @@ void command(char *text){
  IntegerCommand doc;
  if(!doc.begin(text)||!doc[PSTR("N")].isInt16())return;
  int n=doc[PSTR("N")],d=doc[PSTR("D1")].orDefault(0);
- if((n>=200&&n<=205)||n==214)return; // camera/traffic messages: ignored in the mapping build
+ if(n==204){ // colour frame from the ESP32: R = red region >= RP pixels, G = green seen
+  if(mode==6&&doc[PSTR("S")].isUInt16())traffic.colour(doc[PSTR("S")],(long)doc[PSTR("V")]==1,(long)doc[PSTR("R")]==1,(long)doc[PSTR("G")]==1,
+   follower.state==LineFollower::FOLLOW||follower.state==LineFollower::CROSS,millis());
+  return;
+ }
+ if(n==205){ // STOP-sign AI result for our request ID
+  if(mode==6&&doc[PSTR("ID")].isUInt16())traffic.ai(doc[PSTR("ID")],(long)doc[PSTR("V")]==1,(long)doc[PSTR("P")]>0,millis());
+  return;
+ }
+ if((n>=200&&n<=203)||n==214)return; // other camera messages are not needed
  if(n==213){ // gyro navigation 0/1, 1 also zeroes; 2 = zero only
   if(mode!=0||d<0||d>2){reply(false);return;}
   if(d<2)gyroNavigation=d;
@@ -145,6 +156,7 @@ char tx[352];uint16_t txPos=0,txLen=0;
 int freeRam(){extern char __heap_start;extern char *__brkval;char top;return &top-(__brkval?__brkval:&__heap_start);}
 uint8_t trafficState(){ // TS shown by the web page: 0 OFF, 2 TRACK, 7 CROSS, 8 FAULT
  if(mode!=6)return 0;
+ if(traffic.stopped())return traffic.ts();
  switch(follower.state){case LineFollower::CROSS:return 7;case LineFollower::FAIL:return 8;default:return 2;}
 }
 void takeSample(uint32_t now){
@@ -153,7 +165,7 @@ void takeSample(uint32_t now){
  s.q=sampleSeq++;s.t=now;s.l=lineL;s.c=lineM;s.r=lineR;s.pl=leftPWM;s.pr=rightPWM;
  s.g10=(int16_t)(pose.yawRate*10);s.yaw10=(int32_t)(pose.yawDegrees*10);s.distMm=(int32_t)(pose.dist*10);
  s.u=rangeCm;s.x=(int16_t)pose.x;s.y=(int16_t)pose.y;
- s.st=(uint8_t)((mode<<4)|(pose.gyro?8:0)|(mode==6?follower.state:0)); // bit3 = gyro working
+ s.st=(uint8_t)((mode<<4)|(pose.gyro?8:0)|(mode==6?(traffic.stopped()?6:follower.state):0)); // bit3 = gyro working, state 6 = red stop
  s.k=eventMask|follower.events;
  eventMask=0;follower.events=0;
 }
@@ -165,8 +177,8 @@ void scheduleTx(uint32_t now){
   startTx(snprintf_P(tx,sizeof(tx),PSTR("{\"N\":222,\"ID\":%d,\"OK\":1,\"CS\":%d,\"RS\":%d,\"DS\":%d}\n"),configReply,cruise,echoRS,echoDS));configReply=-1;return;
  }
  if(pendingReply>=0){startTx(snprintf_P(tx,sizeof(tx),PSTR("{\"N\":211,\"OK\":%d}\n"),(int)pendingReply));pendingReply=-1;return;}
- bool statusDue=uint32_t(now-lastStatus)>=STATUS_MS;
- if(ringCount&&!(statusDue&&uint32_t(now-lastStatus)>=STATUS_MS+250)){
+ bool statusDue=uint32_t(now-lastStatus)>=STATUS_MS||traffic.changed; // a traffic state change is reported at once (ESP32 starts the STOP AI)
+ if(ringCount&&!traffic.changed&&!(statusDue&&uint32_t(now-lastStatus)>=STATUS_MS+250)){
   Sample &s=ring[ringHead];ringHead=(ringHead+1)%RING;ringCount--;
   // d=[q,t,L,C,R,PL,PR,gyro_rate*10,yaw*10,dist_mm,x_cm,y_cm,ultrasonic,state(mode*16+8*gyroOK+follow),mask]
   startTx(snprintf_P(tx,sizeof(tx),PSTR("{\"N\":230,\"d\":[%u,%lu,%d,%d,%d,%d,%d,%d,%ld,%ld,%d,%d,%d,%u,%u]}\n"),
@@ -174,10 +186,10 @@ void scheduleTx(uint32_t now){
   return;
  }
  if(statusDue){
-  lastStatus=now;uint8_t ts=trafficState();
+  lastStatus=now;traffic.changed=false;uint8_t ts=trafficState();
   bool searching=mode==6&&(follower.state==LineFollower::TURN||follower.state==LineFollower::SEARCH);
-  startTx(snprintf_P(tx,sizeof(tx),PSTR("{\"N\":221,\"M\":%u,\"TS\":%u,\"ID\":0,\"X\":%d,\"Y\":%d,\"H\":%d,\"KX\":%d,\"KY\":%d,\"KH\":%d,\"L\":%d,\"C\":%d,\"R\":%d,\"GY\":%u,\"YA\":%d,\"UV\":%d,\"FR\":%d,\"UT\":%lu,\"FC\":%u,\"FS\":%u,\"SE\":%u,\"SP\":%u,\"GC\":0,\"PL\":%d,\"PR\":%d,\"ES\":%u,\"ER\":%u,\"PD\":0,\"RN\":%u,\"GN\":%u,\"ZR\":%u,\"MQ\":%u,\"MD\":%u,\"IM\":%u,\"IW\":%u,\"IQ\":%u,\"IB\":%u,\"CB\":%u,\"GL\":%d,\"GF\":%u}\n"),
-   mode,ts,(int)pose.x,(int)pose.y,(int)(pose.heading*180/PI),(int)pose.kinX,(int)pose.kinY,(int)(pose.kinHeading*180/PI),lineL,lineM,lineR,(unsigned)pose.gyro,(int)pose.yawDegrees,FIRMWARE_UV,freeRam(),(unsigned long)now,
+  startTx(snprintf_P(tx,sizeof(tx),PSTR("{\"N\":221,\"M\":%u,\"TS\":%u,\"ID\":%u,\"X\":%d,\"Y\":%d,\"H\":%d,\"KX\":%d,\"KY\":%d,\"KH\":%d,\"L\":%d,\"C\":%d,\"R\":%d,\"GY\":%u,\"YA\":%d,\"UV\":%d,\"FR\":%d,\"UT\":%lu,\"FC\":%u,\"FS\":%u,\"SE\":%u,\"SP\":%u,\"GC\":0,\"PL\":%d,\"PR\":%d,\"ES\":%u,\"ER\":%u,\"PD\":0,\"RN\":%u,\"GN\":%u,\"ZR\":%u,\"MQ\":%u,\"MD\":%u,\"IM\":%u,\"IW\":%u,\"IQ\":%u,\"IB\":%u,\"CB\":%u,\"GL\":%d,\"GF\":%u}\n"),
+   mode,ts,traffic.req,(int)pose.x,(int)pose.y,(int)(pose.heading*180/PI),(int)pose.kinX,(int)pose.kinY,(int)(pose.kinHeading*180/PI),lineL,lineM,lineR,(unsigned)pose.gyro,(int)pose.yawDegrees,FIRMWARE_UV,freeRam(),(unsigned long)now,
    (unsigned)(mode==6?follower.fault:0),(unsigned)(mode==6?follower.faultState:0),(unsigned)searching,(unsigned)(mode==6?follower.state:0),leftPWM,rightPWM,(unsigned)eStopLatched,(unsigned)eStopReason,runNumber,(unsigned)gyroNavigation,(unsigned)zeroRevision,sampleSeq,droppedSamples,(unsigned)pose.imuType,(unsigned)pose.whoMpu,(unsigned)pose.whoQmi,(unsigned)pose.busRecoveries,(unsigned)pose.calibrating,(int)gyroSignLearned,(unsigned)gyroSignFlips));
   return;
  }
@@ -208,7 +220,9 @@ void loop(){
  if(mode==5){
   if(uint32_t(now-lastRemote)>=REMOTE_TIMEOUT_MS)standby();else directionPWM(manualDir,speedSetting,left,right);
  }else if(mode==6){
-  follower.step(blackL,blackM,blackR,now,pose.yawDegrees,gyroNavigation&&pose.gyro,rangeCm,left,right);
+  traffic.tick(now);
+  if(traffic.stopped())follower.lastMs=now; // stand still for red / STOP sign; the follower resumes where it was
+  else follower.step(blackL,blackM,blackR,now,pose.yawDegrees,gyroNavigation&&pose.gyro,rangeCm,left,right);
   if(follower.requestSignFlip){ // commanded a left pivot but the gyro said right: the gyro sign (GS) is reversed
    follower.requestSignFlip=false;pose.gyroSign=-pose.gyroSign;pose.yawDegrees=-pose.yawDegrees;pose.heading=-pose.heading;
    follower.negateAngles();gyroSignLearned=pose.gyroSign>0?1:-1;gyroSignFlips++;

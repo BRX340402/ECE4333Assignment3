@@ -13,7 +13,7 @@ ok   sample state field = mode 6 + gyro OK + FOLLOW (0x69=105)
 ok   N221 reports the detected IMU type
 ok   N221 carries sample counter
 ok   sample event mask present (centre sensor saw black -> 2)
-     longest line 300 bytes (ESP32 accepts <352)
+     longest line 301 bytes (ESP32 accepts <352)
 ok   every line fits the ESP32 receive buffer
      example: {"N":230,"d":[19,7100,100,900,100,60,60,0,0,376,37,0,-1,105,2]}
 ok   one near ultrasonic reading does not latch E-stop
@@ -38,5 +38,16 @@ ok   after correction a left pivot reads as a LEFT (positive) turn
 ok   N221 reports the correction (GF/GL) for the web page
 ok   saved GS from the ESP32 does not undo the learned sign until power-off
 ok   line sensor hysteresis (black>=640 to enter, <560 to leave at BL=600)
+ok   run with Stop on red enabled, driving
+ok   red >= RP: car stops (VERIFY)
+ok   TS=4 + request ID sent at once so the ESP32 starts the STOP AI
+ok   2 STOP-sign AI hits: 3 s hold
+ok   after 3 s the car drives on
+ok   the same red sign does not stop it again
+ok   re-armed after 3 frames without red
+ok   red light (AI says not STOP): wait for green
+ok   one green frame is not enough
+ok   two green frames: drive on
+ok   Stop on red OFF: red is ignored (mapping only)
 
 ALL UNO PROTOCOL CHECKS PASSED

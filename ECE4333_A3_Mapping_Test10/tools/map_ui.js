@@ -62,7 +62,7 @@ function mapRunLabel(r,i){const d=((r[r.length-1].t-r[0].t)/1000).toFixed(0);ret
 function mapRefresh(force){
  mapGyroReadout();
  const age=mapLastOk?((Date.now()-mapLastOk)/1000).toFixed(0):'-',live=mapSamples[mapSamples.length-1];
- const st=['IDLE','FOLLOW','CROSS','TURN','SEARCH','FAIL'];
+ const st=['IDLE','FOLLOW','CROSS','TURN','SEARCH','FAIL','RED STOP'];
  $('mapStatus').textContent='Recorded '+mapLines.length+' lines / '+mapSamples.length+' samples on this tablet'+
   (mapLost?' | LOST '+mapLost+' (offline > ~3 min)':' | nothing lost')+' | last contact '+age+' s ago'+
   (live?' | car: '+(live.mode===6?'AUTO '+(st[live.fs]||live.fs):live.mode===5?'MANUAL':'stopped')+', yaw '+live.yaw.toFixed(0)+' deg, L/C/R '+live.L+'/'+live.C+'/'+live.R:'')+
