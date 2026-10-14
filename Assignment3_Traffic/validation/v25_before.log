@@ -1,0 +1,16 @@
+In file included from /tmp/arduino-check/baseline/UNO_Assignment2/UNO_Assignment2.ino:4:0:
+/tmp/arduino-check/user/libraries/FastLED-master/FastLED.h:14:21: note: #pragma message: FastLED version 3.002.010
+ #    pragma message "FastLED version 3.002.010"
+                     ^~~~~~~~~~~~~~~~~~~~~~~~~~~
+Sketch uses 32414 bytes (100%) of program storage space. Maximum is 32256 bytes.
+Global variables use 1426 bytes (69%) of dynamic memory, leaving 622 bytes for local variables. Maximum is 2048 bytes.
+Sketch too big; see https://support.arduino.cc/hc/en-us/articles/360013825179 for tips on reducing it.
+
+Used library Version Path
+Servo        1.2.2   /tmp/arduino-check/user/libraries/Servo-1.2.2
+FastLED      3.2.10  /tmp/arduino-check/user/libraries/FastLED-master
+Wire         1.0     /tmp/arduino-check/data/packages/arduino/hardware/avr/1.8.6/libraries/Wire
+
+Used platform Version Path
+arduino:avr   1.8.6   /tmp/arduino-check/data/packages/arduino/hardware/avr/1.8.6
+Error during build: text section exceeds available space in board

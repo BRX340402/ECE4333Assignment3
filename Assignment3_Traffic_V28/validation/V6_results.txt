@@ -1,0 +1,7 @@
+V6 camera restore 2026-10-09
+PASS: original camera PSRAM profile restored (10 MHz JPEG, UXGA allocation, SVGA runtime, quality10, two framebuffers, flip0/mirror0).
+PASS: no application white balance/exposure/gain/saturation/effect writes; /control rejects runtime changes.
+PASS: full ESP32 host syntax with mocks; UI JS auto-preview/tabs/calibration/start/stop.
+PASS: extracted calibration routes and live metrics, ASAN/UBSAN.
+PASS: 108 decoder cases including SVGA -> 400x300 -> 160x160.
+NOT VERIFIED: target firmware build, actual image/noise/colour behaviour, throughput or hardware operation.

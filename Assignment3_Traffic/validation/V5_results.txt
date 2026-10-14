@@ -1,0 +1,9 @@
+V5 2026-10-09
+PASS host: traffic scenarios (V4 UNO unchanged).
+PASS host: 108 decoder/colour extent cases, ASAN/UBSAN.
+PASS host: actual three-profile calibration HTTP handler extraction, ASAN/UBSAN.
+PASS host: actual compact live metrics extraction, ASAN/UBSAN.
+PASS host: dashboard JS VM, automatic preview / tabs / calibration / heartbeat.
+PASS host: full ESP32 sketch syntax with mocked hardware APIs.
+PASS source comparison: FAST19 camera init, config, pins, model adapter, model ZIP, model shape and arena source unchanged.
+Unavailable: ESP32 target compiler and headless browser binary. No real hardware latency/noise claims.

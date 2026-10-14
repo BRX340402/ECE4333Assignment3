@@ -1,0 +1,8 @@
+PASS scan tables: separate runs, all-field flattening, duplicate/stale flags, gaps, CSV escaping, stop confirmation, capacity.
+PASS gzip roundtrip, page syntax, actual motor-output no trim/E-stop gate, PD direction/zero/lost-line/heading.
+PASS floor calibration: both polarities, sensor overlap rejection
+PASS unchanged red/STOP/green decisions
+PASS Test 2: green confirmations, dropouts, timeout, red priority, STOP hold, 120/360 search configuration
+PASS search: saturation, inverted threshold, full measured angles, direction gate, 60ms confirmation, wide patches, gyro sign, nudge gate
+PASS ESP32 host-stub syntax (not ESP32 target compilation).
+PASS actual N213 handler: default OFF, enable + zero, disable, zero while OFF, moving-state rejection, invalid value, independent PD; gyro motor gates.

@@ -1,0 +1,171 @@
+--- Test2/UNO_Assignment2/UNO_Assignment2.ino
++++ Test3/UNO_Assignment2/UNO_Assignment2.ino
+@@ -1,5 +1,5 @@
+ #include <Arduino.h>
+-// ECE 4333 Assignment 3 TEST 1: V27 protocol, five bounded recovery attempts.
++// ECE 4333 Assignment 3 TEST 3: Test 2 tracking + light safety/pose/logging.
+ #include <avr/pgmspace.h>
+ #include <Servo.h>
+ #include <FastLED.h>
+@@ -12,6 +12,7 @@
+ #include "Ex3Tracking.h"
+ #include "CrossingControl.h"
+ #include "PoseEstimate.h"
++#include "Test3Options.h"
+ TrafficLogic traffic; Ex3Tracking ex3; PoseEstimate pose;
+ CrossingControl crossing;TrafficLogic::State previousTraffic=TrafficLogic::OFF;
+ bool settingsReady=false;int configReply=-1;
+@@ -30,6 +31,7 @@
+ Servo pan;CRGB led[1];IRrecv remote(IR_PIN);decode_results irResult;
+ VisionState vision;
+ bool stopObserved=false;
++bool eStopLatched=false; uint8_t eStopReason=0; // 1=web, 2=ultrasonic
+ // LED: confirmed STOP solid red > red region blinking red > manual colour (off by default).
+ CRGB manualLed=CRGB::Black;
+ uint8_t manualBrightness=20;
+@@ -50,13 +52,19 @@
+ uint8_t avoidPhase=0;uint32_t avoidAt=0;int rangeLeft=-1,rangeRight=-1;
+ void setPan(int angle){panAngle=constrain(angle,0,180);pan.write(panAngle);}
+ void motorOutput(int left,int right){
++ // Final hardware gate: no action can restart a latched software E-stop.
++ if(eStopLatched)left=right=0;
+  left=constrain(left,-DRIVE_LIMIT,DRIVE_LIMIT);right=constrain(right,-DRIVE_LIMIT,DRIVE_LIMIT);
++ // Optional right-wheel trim for low-speed torque testing. Preserve sign/zero.
++ if(right!=0){int a=abs(right)+RIGHT_PWM_TRIM;if(a>DRIVE_LIMIT)a=DRIVE_LIMIT;right=right>0?a:-a;}
+  digitalWrite(MOTOR_STBY,(left||right)?HIGH:LOW);
+  digitalWrite(MOTOR_LEFT_DIR,left>=0?HIGH:LOW);digitalWrite(MOTOR_RIGHT_DIR,right>=0?HIGH:LOW);
+  analogWrite(MOTOR_LEFT_PWM,abs(left));analogWrite(MOTOR_RIGHT_PWM,abs(right));leftPWM=left;rightPWM=right;
+ }
+ void standby(){traffic.stop(millis());ex3.reset();irOwned=false;mode=0;manualDir=9;avoidPhase=0;remoteOwned=false;motorOutput(0,0);}
++void latchEStop(uint8_t why){standby();eStopLatched=true;eStopReason=why;traffic.fail(TrafficLogic::UNKNOWN_FAULT,millis());motorOutput(0,0);}
+ void chooseMode(uint8_t m,bool fromRemote){
++ if(eStopLatched)return;
+  motorOutput(0,0);traffic.stop(millis());ex3.reset();irOwned=false;mode=m;manualDir=9;avoidPhase=0;remoteOwned=fromRemote;lastRemote=millis();
+  if(m>=1&&m<=4)setPan(90);
+  if(m==4)aiGuard=true;
+@@ -83,6 +91,14 @@
+  const char *optional[]={PSTR("D1"),PSTR("D2"),PSTR("D3"),PSTR("D4")};
+  for(uint8_t i=0;i<4;i++)if(doc.containsKey(optional[i])&&!doc[optional[i]].isInt16())return;
+  int n=doc[PSTR("N")],d=doc[PSTR("D1")].orDefault(0);
++ if(n==207){ // Browser E-stop or explicit reset. Always requires a separate Start.
++  if(d==1){latchEStop(1);reply(true);return;}
++  if(d==0){
++   if(rangeCm>=0&&rangeCm<=FORWARD_ESTOP_CM){reply(false);return;}
++   eStopLatched=false;eStopReason=0;standby();reply(true);return;
++  }
++  reply(false);return;
++ }
+  if(n==206){
+   const char *keys[]={PSTR("ID"),PSTR("SC"),PSTR("BL"),PSTR("BH"),PSTR("RA"),PSTR("SA"),PSTR("CT"),PSTR("GS"),PSTR("CS"),PSTR("RS"),PSTR("DS")};
+   for(uint8_t i=0;i<11;i++)if(!doc[keys[i]].isInt16())return;
+@@ -271,10 +287,14 @@
+  else if(mode==2)avoid(left,right);
+  else if(mode==3){if(rangeCm>=15&&rangeCm<=50)left=right=speedSetting;else reason=8;}
+  else if(mode==5)directionPWM(manualDir,speedSetting,left,right);
++ // A genuinely measured nearby forward obstacle is an automatic stop.
++ // Only forward travel: turning-in-place has different ultrasonic geometry.
++ if(!eStopLatched&&mode==6&&traffic.moving()&&left>0&&right>0 &&
++    rangeCm>=0&&rangeCm<=FORWARD_ESTOP_CM){latchEStop(2);left=right=0;}
+  motorOutput(left,right);
+  if(txPos>=txLen&&millis()-lastTrafficTx>=400){
+   lastTrafficTx=millis();
+-  int n=snprintf_P(txBuffer,sizeof(txBuffer),PSTR("{\"N\":221,\"M\":%u,\"TS\":%u,\"ID\":%u,\"X\":%d,\"Y\":%d,\"H\":%d,\"KX\":%d,\"KY\":%d,\"KH\":%d,\"PV\":%u,\"CF\":%u,\"L\":%d,\"C\":%d,\"R\":%d,\"GY\":%u,\"YA\":%d,\"UV\":31,\"FR\":%d,\"UT\":%lu,\"FC\":%u,\"FS\":%u,\"SE\":%u,\"SP\":%u,\"SM\":%u,\"GC\":%u}\n"),mode,(unsigned)traffic.state,traffic.request,(int)pose.x,(int)pose.y,(int)(pose.heading*180/PI),(int)pose.kinX,(int)pose.kinY,(int)(pose.kinHeading*180/PI),(unsigned)(POSE_CALIBRATED&&pose.gyro),(unsigned)pose.corrected,lineL,lineM,lineR,(unsigned)pose.gyro,(int)pose.yawDegrees,freeRam(),(unsigned long)millis(),(unsigned)traffic.fault,(unsigned)traffic.faultState,(unsigned)ex3.searching,(unsigned)ex3.phase,(unsigned)ex3.timedSearch,(unsigned)traffic.greens);
++  int n=snprintf_P(txBuffer,sizeof(txBuffer),PSTR("{\"N\":221,\"M\":%u,\"TS\":%u,\"ID\":%u,\"X\":%d,\"Y\":%d,\"H\":%d,\"KX\":%d,\"KY\":%d,\"KH\":%d,\"L\":%d,\"C\":%d,\"R\":%d,\"GY\":%u,\"YA\":%d,\"UV\":32,\"FR\":%d,\"UT\":%lu,\"FC\":%u,\"FS\":%u,\"SE\":%u,\"SP\":%u,\"GC\":%u,\"PL\":%d,\"PR\":%d,\"ES\":%u,\"ER\":%u}\n"),mode,(unsigned)traffic.state,traffic.request,(int)pose.x,(int)pose.y,(int)(pose.heading*180/PI),(int)pose.kinX,(int)pose.kinY,(int)(pose.kinHeading*180/PI),lineL,lineM,lineR,(unsigned)pose.gyro,(int)pose.yawDegrees,freeRam(),(unsigned long)millis(),(unsigned)traffic.fault,(unsigned)traffic.faultState,(unsigned)ex3.searching,(unsigned)ex3.phase,(unsigned)traffic.greens,leftPWM,rightPWM,(unsigned)eStopLatched,(unsigned)eStopReason);
+   if(n>0&&n<(int)sizeof(txBuffer)){txPos=0;txLen=n;}
+  }
+  if(millis()-lastTelemetry>=1000){lastTelemetry=millis();telemetry();}
+--- Test2/UNO_Assignment2/PoseEstimate.h
++++ Test3/UNO_Assignment2/PoseEstimate.h
+@@ -17,7 +17,10 @@
+  gyro=writeReg(0x6B,0)&&writeReg(0x1B,0);long sum=0;int16_t v;
+  for(int i=0;i<100&&gyro;i++){gyro=raw(v);if(gyro)sum+=v;delay(5);}bias=sum/100.0f;last=millis();}
+  void step(int left,int right,uint32_t now){
+- float dt=uint32_t(now-last)*0.001f;if(dt<0.01f)return;last=now;if(dt>0.25f){gyro=false;return;}if(!gyro)return;
++ float dt=uint32_t(now-last)*0.001f;if(dt<0.01f)return;last=now;
++ // Skip unusually delayed integration intervals; do not disable gyro permanently.
++ if(dt>0.25f)return;
++ // Wheel-command prediction MUST continue even when the IMU is unavailable.
+  float vl=left*LEFT_CM_S_PER_PWM,vr=right*RIGHT_CM_S_PER_PWM,v=(vl+vr)*0.5f;
+  float wk=(vr-vl)/TRACK_WIDTH_CM,w=wk;int16_t gz;
+  if(gyro&&raw(gz)){float rate=gyroSign*(gz-bias)/131.0f;yawDegrees+=rate*dt;w=0.95f*rate*PI/180.0f+0.05f*wk;}else gyro=false;
+--- Test2/UNO_Assignment2/PoseConfig.h
++++ Test3/UNO_Assignment2/PoseConfig.h
+@@ -2,7 +2,9 @@
+ // Measure these on YOUR car/track before enabling corrections. cm and radians.
+ static const bool POSE_CALIBRATED=false;
+ static const float TRACK_WIDTH_CM=14.0f; // placeholder effective left/right wheel spacing
+-static const float LEFT_CM_S_PER_PWM=0.0f, RIGHT_CM_S_PER_PWM=0.0f;
++// Rough nonzero trial estimates ONLY. Measure separately before claiming accuracy.
++// Units: cm/s per signed PWM count; 50 PWM => ~3.5 cm/s assumed.
++static const float LEFT_CM_S_PER_PWM=0.07f, RIGHT_CM_S_PER_PWM=0.07f;
+ static const float GYRO_SIGN=-1.0f; // ex2 convention; verify positive = left turn
+ static const bool LANDMARK_ENABLED=false;
+ static const float LANDMARK_X_CM=0,LANDMARK_Y_CM=0; // measured STOP sign centre in track frame
+--- Test2/ESP32_Assignment2/ESP32_Assignment2.ino
++++ Test3/ESP32_Assignment2/ESP32_Assignment2.ino
+@@ -601,7 +601,9 @@
+  int value;
+  if(action=="preview"){previewEnabled=web.arg("value")=="1";web.send(200,"text/plain","Preview updated");return;}
+  if(action=="red_min"){if(!strictInt(web.arg("value"),2,2000,value)){web.send(400,"text/plain","Red minimum must be 2-2000 pixels");return;}redMinPixels=value;web.send(200,"text/plain","Red minimum updated");return;}
+- if(action=="stop"){j="{\"N\":100}";owner=0;}
++ if(action=="estop"){j="{\"N\":207,\"D1\":1}";owner=0;}
++ else if(action=="clear_estop"){j="{\"N\":207,\"D1\":0}";owner=0;}
++ else if(action=="stop"){j="{\"N\":100}";owner=0;}
+  else if(action=="ping"){if(owner==1)sendJSON("{\"N\":103}");web.send(200,"text/plain","ok");return;}
+  else if(action=="move"){
+   int speed;if(!strictInt(web.arg("dir"),1,9,value)||!strictInt(web.arg("speed"),0,180,speed)){web.send(400,"text/plain","Bad direction/speed");return;}
+@@ -778,7 +780,8 @@
+   if(trafficMode!=0){web.send(409,"text/plain","Already active. Use STOP CAR before starting a new run.");return;}
+   if(driveSettings.rs&&(!detectEnabled||!colorEnabled)){web.send(409,"text/plain","Enable STOP AI and red/green detection for Stop on red mode");return;}
+   if(!settingsApplied||millis()-trafficReceived.load()>1500){web.send(409,"text/plain","Wait for fresh UNO telemetry and settings acknowledgement");return;}
+-  if(unoFirmware!=31){web.send(409,"text/plain","Upload the matching Test 1 UNO sketch (telemetry UV=31) before starting");return;}
++  if(unoFirmware!=32){web.send(409,"text/plain","Upload the matching Test 3 UNO (UV=32) before starting");return;}
++  if(trafficTelemetry.indexOf("\"ES\":1")>=0){web.send(409,"text/plain","Emergency stop is latched. Clear it, then Start separately.");return;}
+   sendJSON("{\"N\":101,\"D1\":6}");owner=1;web.send(200,"text/plain","Start requested; check UNO state acknowledgement");
+  });
+  web.on("/traffic-sample",HTTP_POST,[]{
+--- Test2/ESP32_Assignment2/TrafficPage.h
++++ Test3/ESP32_Assignment2/TrafficPage.h
+@@ -1,11 +1,13 @@
+ #pragma once
+ static const char TRAFFIC_PAGE[] PROGMEM=R"HTML(<!doctype html>
+-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ECE 4333 Robot Car Test 1</title>
++<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ECE 4333 Robot Car Test 3</title>
+ <style>
+ *{box-sizing:border-box}body{margin:0;background:#101722;color:#edf3fa;font:16px system-ui,sans-serif}main{max-width:960px;margin:auto;padding:18px}header,.actions,nav{display:flex;align-items:center;gap:10px;flex-wrap:wrap}header{justify-content:space-between}h1{font-size:24px;margin:8px 0}h2{font-size:19px;margin:0 0 12px}section,details{background:#1c2939;border:1px solid #304156;border-radius:12px;padding:16px;margin:14px 0}button,input,select{font:inherit;border:1px solid #52677f;border-radius:7px;padding:9px;background:#26394e;color:#fff}button{cursor:pointer}button:disabled{opacity:.5;cursor:default}button.primary{background:#287b67}.danger{background:#bd3b3b}nav{margin:14px 0}nav button[aria-selected=true]{background:#287b67;border-color:#55baa2}label{display:block;margin:12px 0}input[type=number]{width:100px}input[type=checkbox]{width:auto}p{line-height:1.5;margin:10px 0}.hint,small{color:#b5c5d8}#message,#cal{color:#ffcf91;min-height:24px;overflow-wrap:anywhere}#live{display:block;width:100%;height:auto;min-height:180px;background:#080d15;border-radius:8px}table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:10px 5px;text-align:left;border-bottom:1px solid #354459}th{color:#b5c5d8;font-weight:500}summary{cursor:pointer}a{color:#8cd7ff}.tablewrap{overflow:auto}#savedCal{white-space:pre-wrap;font-size:14px;line-height:1.7}.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.drivepad{display:grid;grid-template-columns:repeat(3,65px);gap:7px;margin:10px 0}.drivepad button{touch-action:none;user-select:none}[hidden]{display:none!important}@media(max-width:620px){.grid{grid-template-columns:1fr}main{padding:12px}td,th{padding:9px 3px;font-size:12px}}
+ </style></head><body><main>
+ <header><h1>Robot Car <small>Test 1</small></h1><span id="runState">Connecting…</span></header>
+-<div class="actions"><button class="danger" onclick="stopCar()">STOP CAR</button><button class="primary" onclick="startCar()">Start continuous run</button></div>
++<div class="actions"><button class="danger" onclick="stopCar()">STOP CAR</button><button class="danger" onclick="emergencyStop()">EMERGENCY STOP (latched)</button><button onclick="clearEStop()">Reset E-stop</button><button class="primary" onclick="startCar()">Start continuous run</button></div>
++<p class="hint">Browser stop needs Wi-Fi. Reset only clears latch; it does NOT restart the car. Keep the physical power switch accessible.</p>
++<p id="poseInfo" class="hint">Awaiting position telemetry…</p>
+ <p id="message" role="status"></p><p id="visionHealth" class="hint"></p>
+ <section><div style="position:relative"><img id="live" width="320" height="240" alt="Live camera — connecting"><div id="boxes" style="position:absolute;inset:0;pointer-events:none"></div></div><small id="previewState">Connecting camera…</small> <button id="togglePreview" onclick="togglePreview()">Pause preview</button>
+ <div class="tablewrap"><table><thead><tr><th>Target</th><th>Detected</th><th>Pixels</th><th>Width (px)</th><th>Distance (cm)</th></tr></thead><tbody>
+@@ -81,6 +83,8 @@
+ async function post(url,data={}){return request(url,data);}
+ function switchTab(name){currentTab=name;for(const t of ['car','camera']){$(t+'Panel').hidden=t!==name;$(t+'Tab').setAttribute('aria-selected',String(t===name));}}
+ async function stopCar(){driving=false;manualHeld=false;try{$('message').textContent=await post('/cmd',{action:'stop'});}catch(e){$('message').textContent='STOP was not delivered. Autonomous running may continue; use the physical power switch if needed.';}}
++async function emergencyStop(){driving=false;manualHeld=false;try{$('message').textContent='Emergency stop command sent. Confirm ES=1 and PWM 0 on this page.';await post('/cmd',{action:'estop'});}catch(e){$('message').textContent='E-stop communication failed! Use physical power switch.';}}
++async function clearEStop(){driving=false;try{await post('/cmd',{action:'clear_estop'});$('message').textContent='Reset requested. Confirm ES=0 and OFF before pressing Start.';}catch(e){$('message').textContent=e.message;}}
+ async function startCar(){if(settingsBusy){$('message').textContent='Wait for UNO settings confirmation.';return;}
+  try{const wanted=readSettingsForm(),current=JSON.parse(await request('/traffic-settings'));
+  if(!settingsMatch(current,wanted)&&!await saveSettings())return;
+@@ -95,7 +99,7 @@
+  let saved=false;for(let n=0;n<16;n++){try{await post('/traffic-settings',wanted);saved=true;break;}catch(e){if(e.status!==409)throw e;await delay(400);}}
+  if(!saved)throw Error('UNO did not acknowledge OFF. Settings not applied.');
+  for(let n=0;n<20;n++){const actual=JSON.parse(await request('/traffic-settings'));if(settingsMatch(actual,wanted)){$('message').textContent=`UNO confirmed: stop on red ${wanted.RS?'ON':'OFF'}, cruise PWM ${wanted.CS}, reduced PWM ${wanted.DS}, red threshold ${wanted.RP} px. Press Start to run.`;return true;}await delay(400);}
+- throw Error('Settings saved but UNO confirmation missing. Do not start; check matching UNO Test 1.');
++ throw Error('Settings saved but UNO confirmation missing. Do not start; check matching UNO Test 3.');
+  }catch(e){$('message').textContent=e.message;return false;}finally{settingsBusy=false;$('RS').disabled=$('CS').disabled=$('DS').disabled=$('RP').disabled=false;}}
+ function resetSample(){scannedToken=null;sampleResolution=null;$('width').value='';$('image_w').value='';$('saveCal').disabled=true;$('sampleInfo').textContent='Scan the selected target first.';}
+ async function sampleWidth(){resetSample();try{const d=JSON.parse(await post('/traffic-sample',{profile:$('profile').value}));$('width').value=d.width;$('image_w').value=d.image_w;sampleResolution=d.framesize;scannedToken=d.token;$('saveCal').disabled=false;$('sampleInfo').textContent=`Scanned ${d.width} px. Enter the distance and save.`;}catch(e){$('cal').textContent=e.message;}}
+@@ -105,7 +109,7 @@
+ function showObjects(objects){for(const k of ['red','green','stop']){const v=objects[k]||{};$(k+'Seen').textContent=!v.valid?'—':v.seen?'Yes':'No';$(k+'Pixels').textContent=v.valid&&v.seen?v.pixels:'—';$(k+'Width').textContent=v.valid&&v.seen&&v.width>0?v.width:'—';$(k+'Distance').textContent=v.valid&&v.seen&&v.distance_cm>=0?v.distance_cm:'—';}}
+ const faultReasons={1:'Colour data older than 1.5 s',2:'Invalid or ambiguous colour frame',3:'Red target lost during approach (over 0.7 s)',4:'STOP inference reported invalid data',5:'STOP verification timed out (20 s)',6:'Junction crossing did not finish',7:'Legacy lift fault (not used by Test 1 search)',8:'Gyroscope unavailable during search or crossing',9:'Line recovery exceeded its time limit (55 s)',10:'Yaw changed opposite to the search direction',11:'Line not found after up to five recovery attempts',12:'Crossing heading deviated by more than 40 degrees',13:'Unclassified control fault',14:'Obstacle too close for forward reposition'};
+ function faultMessage(u){const code=Number(u.FC),stage=names[u.FS]||'unknown stage';return Number.isInteger(code)&&code>0?`FAULT ${code} — ${faultReasons[code]||'Unknown fault'} | From: ${stage}. Stop, correct the cause, then restart.`:'FAULT — detailed reason unavailable; upload matching UNO Test 1. Stop before restarting.';}
+-async function poll(){try{const d=JSON.parse(await request('/traffic-status'));latest=d;showObjects(d.objects||{});boxObjects=d.objects||{};boxesAt=Date.now();drawBoxes();showSavedCalibration(d);const vh=d.vision_health||{};$('visionHealth').textContent=`Colour frame age: ${vh.age_ms??'—'} ms | Red regions: ${vh.red_regions??'—'} | Green regions: ${vh.green_regions??'—'} | Colour processing: ${vh.processing_ms??'—'} ms | STOP inference: ${d.objects?.stop?.inference_ms??'—'} ms`;const u=d.uno||{},c=d.settings||{};$('runState').textContent=d.age_ms<1500?(Number(u.UV)===31?(names[u.TS]||'Waiting for UNO'):'UNO VERSION MISMATCH — upload Test 1 UNO'):'UNO disconnected';$('floor').textContent=`Floor L ${u.L} · M ${u.C} · R ${u.R} | Gyro ${u.GY?'OK':'unavailable'} | Yaw ${u.YA}° | Search: ${u.SE?['right (up to 120°)','left (240° total)','return right toward start','tiny forward nudge (if clear)'][u.SP]||'unknown':'idle'} (${u.SM?'timed fallback':'gyro when available'})`;$('applied').textContent=settingsBusy?'Applying settings…':c.applied?`UNO confirmed: stop on red ${c.RS?'ON':'OFF'} | Cruise PWM ${c.CS} | Reduced PWM ${c.DS} | Red threshold ${c.RP} px`:'Waiting for UNO mode / speed confirmation';$('detect').checked=!!d.detect_enabled;$('color').checked=!!d.color_enabled;if(u.TS===8){driving=false;$('message').textContent=faultMessage(u);}if(scannedToken!==null&&sampleResolution!==d.framesize)resetSample();}catch(e){showObjects({});boxObjects={};drawBoxes();$('runState').textContent='Disconnected — autonomous run may continue';}finally{setTimeout(poll,500);}}
++async function poll(){try{const d=JSON.parse(await request('/traffic-status'));latest=d;showObjects(d.objects||{});boxObjects=d.objects||{};boxesAt=Date.now();drawBoxes();showSavedCalibration(d);const vh=d.vision_health||{};$('visionHealth').textContent=`Colour frame age: ${vh.age_ms??'—'} ms | Red regions: ${vh.red_regions??'—'} | Green regions: ${vh.green_regions??'—'} | Colour processing: ${vh.processing_ms??'—'} ms | STOP inference: ${d.objects?.stop?.inference_ms??'—'} ms`;const u=d.uno||{},c=d.settings||{};$('runState').textContent=d.age_ms<1500?(Number(u.UV)===32?(names[u.TS]||'Waiting for UNO'):'UNO VERSION MISMATCH — upload Test 3 UNO'):'UNO disconnected';$('poseInfo').textContent=`Predicted X=${u.KX??'—'} cm, Y=${u.KY??'—'} cm, heading=${u.KH??'—'}° | Gyro-aided X=${u.X??'—'} cm Y=${u.Y??'—'} cm heading=${u.H??'—'}° | PWM L=${u.PL??'—'}, R=${u.PR??'—'} | E-stop=${u.ES?'LATCHED':'clear'} (${u.ER??0}) | Gyro=${u.GY?'OK':'unavailable'} | FR=${u.FR??'—'} B`;$('floor').textContent=`Floor L ${u.L} · M ${u.C} · R ${u.R} | Gyro ${u.GY?'OK':'unavailable'} | Yaw ${u.YA}° | Search: ${u.SE?['right (up to 120°)','left (240° total)','return right toward start','tiny forward nudge (if clear)'][u.SP]||'unknown':'idle'} (${u.SM?'timed fallback':'gyro when available'})`;$('applied').textContent=settingsBusy?'Applying settings…':c.applied?`UNO confirmed: stop on red ${c.RS?'ON':'OFF'} | Cruise PWM ${c.CS} | Reduced PWM ${c.DS} | Red threshold ${c.RP} px`:'Waiting for UNO mode / speed confirmation';$('detect').checked=!!d.detect_enabled;$('color').checked=!!d.color_enabled;if(u.TS===8){driving=false;$('message').textContent=faultMessage(u);}if(scannedToken!==null&&sampleResolution!==d.framesize)resetSample();}catch(e){showObjects({});boxObjects={};drawBoxes();$('runState').textContent='Disconnected — autonomous run may continue';}finally{setTimeout(poll,500);}}
+ async function heartbeat(){try{if(manualHeld)await post('/cmd',{action:'ping'});}catch(e){driving=false;manualHeld=false;$('message').textContent='Manual control connection lost; manual driving will time out.';}finally{setTimeout(heartbeat,300);}}
+ let boxObjects={},boxesAt=0;
+ function drawBoxes(){

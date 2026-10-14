@@ -1,0 +1,6 @@
+V4 2026-10-09
+PASS: traffic scenarios, ASAN/UBSAN (leak check disabled): immediate start, existing red on start, repeated circuits, stop latch, crossing and search.
+PASS: extracted ESP32 HTTP routes with mocks, ASAN/UBSAN.
+PASS: UI JavaScript mocked requests.
+PASS: UNO host syntax with mock hardware headers.
+NOT RUN: ESP32/AVR target build, memory usage, hardware trials.

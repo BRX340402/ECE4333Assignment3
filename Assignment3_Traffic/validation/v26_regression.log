@@ -1,0 +1,13 @@
+PASS V26 production publish: stale/missing/shifted red cannot veto stop-on-red STOP; legacy match preserved; two-hit release restarts at cruise60, reduced30 retained.
+HTML 29772 bytes -> gzip 9837 bytes (33.0%)
+PASS V15: uncalibrated motion; calibrated red distance stop and three-green release; stale/invalid vision tolerance; STOP range/hold/restart protection; V18 bounded right90/reverse-left180 searches and side-line recovery, reacquisition, timeout, lift debounce; crossing without gyro.
+PASS V15 one-time STOP profile, distance scale, wider scan defaults, preserve light/sign, retain later clear/settings, retry failed persistence.
+PASS V16 SVGA startup: quality10/two buffers/SVGA/final orientation; no white-balance or exposure overrides, init failures handled, reset stops car and queues reboot.
+PASS V5 routes: three independent target profiles, STOP requires confirmation, selected clear; active-run restart rejected; frozen scanned width, persisted width/distance, sample token, resolution change, save failure; settings validation and serial payload, reject changes while driving, manual distance formula, stale resolution rejection, start requires acknowledgement.
+PASS V13: strict integer JSON and overflow/truncation/duplicate rejection; current settings, colour, mode, vision, heartbeat commands; 10000 sequential camera packets across sequence wrap; RX quota, overlength recovery and chunked telemetry.
+PASS V19 overlays and autonomous heartbeat; read-only camera startup and existing UI: read-only startup, driver-default restart request and manual camera controls; retain last frame on HTTP503, network errors, HTTP204 and JPEG decode error; resume on recovery; object URLs released; default live preview on independent port; JS tabs retain preview; compact stale-aware metrics; red/green/STOP calibration; saved values; start/stop/heartbeat.
+PASS V19 exact watchdog: autonomous survives missing heartbeat; manual and IR still expire.
+PASS V19 production box JSON: normalized-source coordinates, three classes, resolution guards, colour-off STOP, FOMO fallback, AI-off hiding.
+PASS V21 red-stop latch, no-calibration detection, stale/lost-red hold, two-positive release even at distance, plain-red wait, green release, timeout hold, disabled legacy behaviour, speed limits.
+PASS V23: nonconsecutive STOP positives retained across bad frames, negatives and WAIT_RED; long wait keeps scanning eligibility; wrong request ignored; green sequence not reset by AI; speed cap.
+PASS V24 pixel threshold boundaries, zero means no extra gate, zero-speed no movement/search timeout/division, low PWM respected, STOP crossing resumes at cruise when reduced speed is zero.

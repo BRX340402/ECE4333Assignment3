@@ -1,0 +1,2 @@
+The UNO host tests in this folder (uno_v13_generated, run_v15..v27 checks) extract code from the V27 sketch and test the removed line-search / crossing logic.
+They are superseded by tests/v28/ (V28 has no line search).  ESP32-side tests are unchanged.

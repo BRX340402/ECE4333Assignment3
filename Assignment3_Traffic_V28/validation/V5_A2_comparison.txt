@@ -1,0 +1,10 @@
+Compared against current Assignment2_FOMO_FAST.zip, Library version 19 (FAST19), retrieved 2026-10-09.
+Camera initialization function is byte-identical.
+- Config.h: byte-identical, SHA256 5c4bacf8868bfa64ab84212d37f15b11611e5a1c1c02cbe22938ad6253a82339
+- camera_pins.h: byte-identical, SHA256 3d08c7c5d3a5a77ced4641d1788e1e33b8a256f3f3e1ee1ad5a345e5f8caa093
+- AIAdapter.h: byte-identical, SHA256 ff47f17a88b5ae9509b9c49b0a850b2b96c982f8c7c2c37b3de37e292e92e95e
+- ModelShape.h: byte-identical, SHA256 d286131dc028ca636319cebd2a17bc2ef559bd6e235fb0066390f52dc1d3e6d2
+- EIMemory.cpp: byte-identical, SHA256 cadfa4de97d2f3aefd0a1555896058eb13fd07669b676f0a9c6795cbb64611f4
+CameraDecode.h: extended with same-frame red counting; original model sampling and BGR conversion preserved, verified by 108 synthetic cases.
+ESP32 program as a whole is NOT unchanged: A3 scheduling, green detection, calibration, independent preview and unified UI are additions.
+Bundled model library ZIP: byte-identical to FAST19, SHA256 0def9698a378c203eb96e75fabadb406cbaaf8f61bd56a139aea220ab642ece0

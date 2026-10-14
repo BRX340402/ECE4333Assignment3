@@ -1,0 +1,6 @@
+V7 2026-10-09
+PASS: full ESP32 sketch host syntax with hardware mocks.
+PASS: JS retains last good frame for HTTP503, network errors, HTTP204 and decode failures; resumes after recovery; releases blob URLs.
+PASS: extracted HTTP preview sender handles partial writes, stale-cache503, duplicate204, zero-write close and CORS headers.
+PASS: cameraInit unchanged from delivered V6.
+NOT VERIFIED: target build, real camera/network performance.

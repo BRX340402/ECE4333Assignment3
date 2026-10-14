@@ -1,0 +1,5 @@
+V8 2026-10-09
+Camera initialization function restored byte-for-byte from Assignment2 FAST19, SHA256: bfa372e7948a76009cef9fac6a4a319f194dc2bfa2e82460ab91ad6024637398
+PASS: full sketch host syntax; UI controls, auto-WB preset, preview failure recovery and calibration UI regression.
+PASS: actual camera endpoint extraction under ASAN/UBSAN.
+NOT VERIFIED: target SDK build, hardware colour/noise, white-paper response, latency, network stability.
