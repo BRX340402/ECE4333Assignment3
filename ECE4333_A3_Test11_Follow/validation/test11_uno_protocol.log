@@ -1,0 +1,77 @@
+ok   N221 status about every second while idle
+ok   N221 reports UV=41
+ok   N230 samples at 2 Hz while idle
+ok   N210 battery/sensor line is gone (flash saved)
+ok   Start refused before settings arrive
+ok   settings acknowledged with N222 echo (ESP32 format)
+ok   camera/traffic messages ignored silently
+ok   Start accepted
+ok   mapping run active, FOLLOW
+ok   cruise PWM 60 on a centred line
+ok   N230 at 10 Hz while driving (2 s)
+ok   sample state field = mode 6 + gyro OK + FOLLOW (0x69=105)
+ok   N221 reports the detected IMU type
+ok   N221 carries sample counter
+ok   sample event mask present (centre sensor saw black -> 2)
+ok   N230 carries 18 values: 15 old + predicted heading, x, y
+     longest line 217 bytes (tx buffer 256, ESP32 accepts <352)
+ok   every line fits the UNO tx buffer
+     example: {"N":230,"d":[19,7100,100,900,100,60,60,0,0,376,37,0,-1,105,2,0,37,0]}
+ok   one near ultrasonic reading does not latch E-stop
+ok   3 consecutive near readings latch E-stop, motors off
+ok   E-stop cannot be cleared while obstacle is still near
+ok   E-stop cleared when clear, car stays stopped
+ok   STOP (N100) stops the run
+ok   manual drive (web arrows) works
+ok   manual drive times out without heartbeat
+ok   failed gyro reads are reported (GY=0)
+ok   Start refused while the gyro is not working
+ok   gyro re-detected automatically while parked
+ok   Start accepted again once the gyro works
+ok   zero accepted, 1 s bias re-measurement running
+ok   Start refused while the gyro is calibrating
+ok   after calibration heading is 0 and ZR increments
+ok   N221 reports CB (calibrating) 1 then 0
+ok   idle N230 at 5 Hz for the live gyro readout
+ok   reversed gyro sign does not stop the run
+ok   gyro sign auto-corrected at the first pivot
+ok   after correction a left pivot reads as a LEFT (positive) turn
+ok   N221 reports the correction (GF/GL) for the web page
+ok   saved GS from the ESP32 does not undo the learned sign until power-off
+ok   line sensor hysteresis (black>=640 to enter, <560 to leave at BL=600)
+ok   run with Stop on red enabled, driving
+ok   red >= RP: car stops (VERIFY)
+ok   TS=4 + request ID sent at once so the ESP32 starts the STOP AI
+ok   2 STOP-sign AI hits: 3 s hold
+ok   after 3 s the car drives on
+ok   the same red sign does not stop it again
+ok   re-armed after 3 frames without red
+ok   red light (AI says not STOP): wait for green
+ok   one green frame is not enough
+ok   two green frames: drive on
+ok   Stop on red OFF: red is ignored (mapping only)
+ok   linkFmt matches snprintf on 2000 random values and reports truncation like snprintf
+     widest N221 242 bytes, tx buffer 256
+ok   widest possible N221 status line fits the UNO tx buffer (256)
+     widest N230 149 bytes
+ok   widest possible N230 sample fits the UNO tx buffer
+ok   follow start with an out-of-range stop width is refused
+ok   follow start accepted (mode 7)
+ok   no target yet: car stands still
+ok   N221 TS = 11 while no target (stopped)
+ok   target left of centre: TRACK, right wheel faster (turning left)
+ok   N221 TS = 9 while tracking
+ok   mode 7 sample state byte = 0x79 (121): mode 7, gyro OK, TRACK
+ok   target at the stop width: ARRIVED, car stops
+ok   no more camera frames: car stops after 1.5 s
+ok   STOP ends target following
+ok   following, driving forward at a far target
+ok   obstacle < limit while following: E-stop latches
+ok   E-stop cleared
+ok   Start with 'wait for green': car stands still (WAIT FOR GREEN)
+ok   two green frames: the car drives off
+ok   Start with a 2-lap limit: driving
+ok   one lap done: keeps going
+ok   two laps done: the car stops
+
+ALL UNO PROTOCOL CHECKS PASSED

@@ -1,0 +1,1 @@
+docs: map_predicted_fused_example.png / heading_chart_example.png come from the line-following simulation (sim has a deliberately wrong odometer, so predicted/fused are far off); page_*.png from the mock-car browser test.

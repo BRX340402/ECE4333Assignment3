@@ -1,0 +1,15 @@
+PASS static target 40 cm to the left of the line of travel: car reaches the stop width
+PASS it stops in front of the target, not on top of it
+PASS and faces it (heading within 8 deg)
+PASS target outside the field of view: sweep finds it, then the car drives to it
+PASS mirrored image with negative FOV works
+PASS mirrored image with positive FOV does NOT work (the web page has a mirror box for this)
+PASS moving target: car keeps it in view and stays close (bearing < 40 deg)
+PASS target hidden for 9 s: car stops (HOLD) then searches
+PASS no runaway while the target is lost
+PASS measurement is not used before the 0.5 s outer period
+PASS at 0.5 s the outer loop sets the heading target = 12.4 deg left and starts tracking
+PASS latency compensation: set point = heading at capture time + bearing (not the current heading)
+PASS PD: Kp 1.5 PWM/deg, Kd 0.10 PWM per deg/s
+PASS PD output limited to +/-70
+ALL FOLLOW CHECKS PASSED

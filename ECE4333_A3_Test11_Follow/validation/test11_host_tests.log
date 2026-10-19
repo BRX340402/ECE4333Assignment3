@@ -1,0 +1,19 @@
+ALL UNO PROTOCOL CHECKS PASSED
+ALL FOLLOW CHECKS PASSED
+ALL ROUTE HINT CHECKS PASSED
+SUMMARY gyro ON: 103/108 passed 2 laps; gyro OFF: 71/108
+STRESS (gyro on, tape >= sensor spacing): 389/400 passed 2 laps
+INVERTED GYRO SIGN (auto-corrected at first pivot): 96/96 passed 2 laps
+PASS ESP32 host-stub syntax (not a target compile)
+distance scale: x0.845  (auto from 1 complete lap(s) (860 cm))
+  -> measured speed factor ~ 0.279 cm/s per PWM (UNO uses 0.33); put it in MapConfig.h LEFT/RIGHT_CM_S_PER_PWM
+gyro correction: offset 0.18 deg, drift -0.258 deg/s, scale error 0.59 %
+laps completed: 1; closure error before correction: 16.3 cm
+web page map core: distance scale: x0.845 (auto from 1 complete lap(s) (860 cm))
+web page Test11: PASS run carries the predicted pose (kh,kx,ky)
+web page Test11: PASS mapped track stays near the drawn centre line; fused is much closer than predicted
+web page Test11: PASS predicted track (wheel model only) is worse than the gyro-fused track
+web page Test11: PASS map shows predicted and fused layers
+web page Test11: PASS layers can be switched off
+web page Test11: PASS heading chart drawn
+web page Test11: PASS points CSV has predicted and fused columns
