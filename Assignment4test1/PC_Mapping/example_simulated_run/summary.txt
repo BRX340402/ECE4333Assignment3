@@ -1,0 +1,8 @@
+Test10 map summary  (run 1 of 1, 979 samples, 109.5 s, UNO sample gaps 0)
+distance scale: x4.345  (auto from 9 complete segment(s))
+  -> measured speed factor ~ 0.3042 cm/s per PWM (UNO placeholder 0.07); put it in MapConfig.h LEFT/RIGHT_CM_S_PER_PWM
+gyro correction: offset 0.43 deg, drift -0.279 deg/s, scale error 0.43 %
+laps completed: 1; closure error before correction: 6.5 cm
+segment order seen: C-O-D > D-E > E-O-A > A-B > B-C > C-O-D > D-E > E-O-A > A-B > B-C
+crossing holds: 8, corner turns: 22, searches: 0, all-black hits: 8
+files: map.svg (open in a browser), map_points.csv, segments.csv

@@ -1,0 +1,29 @@
+{
+  "deployment_version": 6,
+  "model": "FOMO",
+  "input": [
+    1,
+    160,
+    160,
+    3
+  ],
+  "output": [
+    1,
+    20,
+    20,
+    2
+  ],
+  "arena_bytes": 395616,
+  "label": "3",
+  "source_sha256": "be38d88792d3201ec8d593f1d00e764658d119a9394bdb4a3e14d83936159cb7",
+  "patches": [
+    "src/edge-impulse-sdk/dsp/config.hpp",
+    "src/edge-impulse-sdk/tensorflow/lite/micro/kernels/conv.cpp",
+    "src/edge-impulse-sdk/tensorflow/lite/micro/kernels/depthwise_conv.cpp",
+    "src/edge-impulse-sdk/tensorflow/lite/kernels/internal/cppmath.h",
+    "src/edge-impulse-sdk/tensorflow/lite/kernels/internal/reference_portable_tensor_utils.cpp",
+    "generated CPP O3/cooperative scheduling",
+    "postprocessing raw cell observer"
+  ],
+  "generated_cpp_weights_preserved": true
+}
