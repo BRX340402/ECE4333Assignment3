@@ -43,6 +43,7 @@ struct A4Bug2 {
  uint8_t nearCount=0, seen=0, farCount=0, silentCount=0, lineCount=0;
  int8_t side=0; // +1 left of track, -1 right of track.
  bool sawSide=false, sawRear=false;
+ bool handover=false;float progressCorrection=0;
  uint8_t doneCount=0,failCount=0;
  static float angle(float a){while(a>180)a-=360;while(a< -180)a+=360;return a;}
  bool active()const{return state!=TRACK&&state!=FAULT;}
@@ -55,7 +56,8 @@ struct A4Bug2 {
   forwardApprovedAt=0;forwardNoEcho=0;
  }
  void reset(){state=TRACK;nearCount=seen=farCount=silentCount=lineCount=0;
-  sawSide=sawRear=false;side=0;entered=started=lastPing=lastGoodPing=lineSince=0;
+  sawSide=sawRear=handover=false;side=0;progressCorrection=0;
+  entered=started=lastPing=lastGoodPing=lineSince=0;
   forwardApprovedAt=0;forwardNoEcho=0;}
  void fault(uint32_t now){
   begin(FAULT,now);if(failCount<99)failCount++;
@@ -120,7 +122,11 @@ struct A4Bug2 {
     else { // line AND heading must be stable before resuming Test11.
      if(M){if(!lineSince)lineSince=now;}
      else lineSince=0;
-     if(lineSince&&uint32_t(now-lineSince)>=150){begin(TRACK,now);cooldown=now+2800;
+     if(lineSince&&uint32_t(now-lineSince)>=150){
+      // Test11 route progress should count forward road travel, not both
+      // sideways movements. Compensate the odometer for the route hint.
+      progressCorrection=(odom-hitDist)-passDistance;
+      handover=true;begin(TRACK,now);cooldown=now+2800;
       if(doneCount<99)doneCount++;return false;}
     }
     return true;
