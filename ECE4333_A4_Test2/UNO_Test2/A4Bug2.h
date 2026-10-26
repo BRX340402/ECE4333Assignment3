@@ -145,17 +145,23 @@ struct A4Bug2 {
    }
    bool edge=(farCount>=3||silentCount>=5);
    if(state==SIDE_SCAN){
-    if(sawSide&&travel>=3&&edge){
+    if(sawSide&&sideDistance>=3&&edge){
      legStart=odom;begin(SIDE_MARGIN,now);return true;
     }
-    if(travel>MAX_SIDE_CM){fault(now);return true;}
-    begin(SIDE_FRONT,now);
+    if(sideDistance>MAX_SIDE_CM){fault(now);return true;}
+    if(seen>=3||farCount>=3||silentCount>=5){
+     if(!sawSide&&silentCount>=5){fault(now);return true;}
+     begin(SIDE_FRONT,now);
+    }
    }else {
     if(sawRear&&passDistance>=3&&edge){
      rearStart=odom;begin(REAR_MARGIN,now);return true;
     }
     if(passDistance>MAX_PASS_CM){fault(now);return true;}
-    begin(PASS_FRONT,now);
+    if(seen>=3||farCount>=3||silentCount>=5){
+     if(!sawRear&&silentCount>=5){fault(now);return true;}
+     begin(PASS_FRONT,now);
+    }
    }
    return true;
   }
@@ -213,7 +219,11 @@ struct A4Bug2 {
   }
   if(state==SIDE_STEP||state==SIDE_MARGIN||state==PASS_STEP||
      state==REAR_MARGIN||state==RETURN_STEP){
-   // When scanning is needed, stop before turning the servo.
+   // Never drive with an unsettled servo or stale range data.
+   if(range==-2)return true;
+   if(range>=0&&range<=FRONT_STOP_CM+5){fault(now);return true;}
+   // A missing echo during forward motion is not a certified clear corridor.
+   if(range<0){fault(now);return true;}
    pd.steer(angle(target-yaw),rate,DRIVE_PWM,PIVOT_PWM,left,right);
   }
   return true;
