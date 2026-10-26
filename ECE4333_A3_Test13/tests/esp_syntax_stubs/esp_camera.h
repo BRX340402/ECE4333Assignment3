@@ -1,0 +1,33 @@
+#pragma once
+#include "Arduino.h"
+using framesize_t=int;using gainceiling_t=int;
+enum{FRAMESIZE_QVGA=4,FRAMESIZE_CIF=5,FRAMESIZE_SVGA=7,FRAMESIZE_UXGA=10,PIXFORMAT_JPEG=0,LEDC_CHANNEL_0=0,LEDC_TIMER_0=0,ESP_OK=0};
+struct camera_fb_t{uint8_t*buf;size_t len,width,height;int format;};
+struct sensor_t{struct {int ae_level,aec,aec2,aec_value,agc,agc_gain,awb,awb_gain,bpc,brightness,colorbar,contrast,dcw,framesize,gainceiling,hmirror,lenc,quality,raw_gma,saturation,special_effect,vflip,wb_mode,wpc;}status;struct{int PID;}id;
+int(*set_ae_level)(sensor_t*,int);
+int(*set_aec2)(sensor_t*,int);
+int(*set_aec_value)(sensor_t*,int);
+int(*set_agc_gain)(sensor_t*,int);
+int(*set_awb_gain)(sensor_t*,int);
+int(*set_bpc)(sensor_t*,int);
+int(*set_brightness)(sensor_t*,int);
+int(*set_colorbar)(sensor_t*,int);
+int(*set_contrast)(sensor_t*,int);
+int(*set_dcw)(sensor_t*,int);
+int(*set_exposure_ctrl)(sensor_t*,int);
+int(*set_framesize)(sensor_t*,int);
+int(*set_gain_ctrl)(sensor_t*,int);
+int(*set_gainceiling)(sensor_t*,int);
+int(*set_hmirror)(sensor_t*,int);
+int(*set_lenc)(sensor_t*,int);
+int(*set_quality)(sensor_t*,int);
+int(*set_raw_gma)(sensor_t*,int);
+int(*set_saturation)(sensor_t*,int);
+int(*set_special_effect)(sensor_t*,int);
+int(*set_vflip)(sensor_t*,int);
+int(*set_wb_mode)(sensor_t*,int);
+int(*set_whitebal)(sensor_t*,int);
+int(*set_wpc)(sensor_t*,int);
+};
+struct camera_config_t{int ledc_channel,ledc_timer,pin_d0,pin_d1,pin_d2,pin_d3,pin_d4,pin_d5,pin_d6,pin_d7,pin_xclk,pin_pclk,pin_vsync,pin_href,pin_sscb_sda,pin_sscb_scl,pin_pwdn,pin_reset,xclk_freq_hz,pixel_format,frame_size,jpeg_quality,fb_count;};
+int esp_camera_init(camera_config_t*);sensor_t*esp_camera_sensor_get();camera_fb_t*esp_camera_fb_get();void esp_camera_fb_return(camera_fb_t*);

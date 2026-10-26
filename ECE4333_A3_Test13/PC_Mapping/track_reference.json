@@ -1,0 +1,10 @@
+{
+  "note": "Figure-8 from the assignment drawing. Start at corner C (lower 60-degree corner), facing the STOP sign = heading 0, left turns positive. Headings are UNWRAPPED (they return to 0 after each lap). Replace length_cm with your tape measurements; A-B and B-C were derived from the drawn angles, not measured.",
+  "segments": [
+    {"name": "C-O-D", "heading_deg": 0.0,    "length_cm": 320.0, "crossing_at_cm": 150.0},
+    {"name": "D-E",   "heading_deg": -136.6, "length_cm": 151.3},
+    {"name": "E-O-A", "heading_deg": -240.0, "length_cm": 220.0, "crossing_at_cm": 120.0},
+    {"name": "A-B",   "heading_deg": -210.0, "length_cm": 43.3},
+    {"name": "B-C",   "heading_deg": -120.0, "length_cm": 125.0}
+  ]
+}
