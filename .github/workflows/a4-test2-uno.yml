@@ -10,6 +10,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: arduino/setup-arduino-cli@v2
+      - name: Compile and run pure C++ Bug2 smoke tests
+        run: |
+          g++ -std=c++11 -Wall -Wextra -pedantic -I ECE4333_A4_Test2/UNO_Test2 ECE4333_A4_Test2/tests/a4_bug2_smoke.cpp -o /tmp/a4_bug2_smoke
+          /tmp/a4_bug2_smoke
       - name: Install AVR board core
         run: |
           arduino-cli core update-index
