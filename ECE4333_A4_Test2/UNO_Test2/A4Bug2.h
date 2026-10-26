@@ -38,6 +38,7 @@ struct A4Bug2 {
  float H=0, target=0, hitDist=0, legStart=0;
  float sideDistance=0, passDistance=0, rearStart=0, returnStart=0;
  uint32_t entered=0, started=0, lastPing=0, lastGoodPing=0, cooldown=0;
+ uint32_t lineSince=0;
  uint8_t nearCount=0, seen=0, farCount=0, silentCount=0, lineCount=0;
  int8_t side=0; // +1 left of track, -1 right of track.
  bool sawSide=false, sawRear=false;
@@ -49,10 +50,10 @@ struct A4Bug2 {
   return PAN_CENTER; // forward ultrasonic before each movement.
  }
  void begin(State s,uint32_t t){
-  state=s;entered=t;seen=farCount=silentCount=lineCount=0;
+  state=s;entered=t;seen=farCount=silentCount=lineCount=0;lineSince=0;
  }
  void reset(){state=TRACK;nearCount=seen=farCount=silentCount=lineCount=0;
-  sawSide=sawRear=false;side=0;entered=started=lastPing=lastGoodPing=0;}
+  sawSide=sawRear=false;side=0;entered=started=lastPing=lastGoodPing=lineSince=0;}
  void fault(uint32_t now){
   begin(FAULT,now);if(failCount<99)failCount++;
  }
@@ -114,9 +115,9 @@ struct A4Bug2 {
     else if(state==TURN_ALONG){legStart=odom;begin(PASS_SCAN,now);}
     else if(state==TURN_IN){returnStart=odom;begin(RETURN_STEP,now);}
     else { // line AND heading must be stable before resuming Test11.
-     if(M){if(lineCount<4)lineCount++;}
-     else lineCount=0;
-     if(lineCount>=3){begin(TRACK,now);cooldown=now+2800;
+     if(M){if(!lineSince)lineSince=now;}
+     else lineSince=0;
+     if(lineSince&&uint32_t(now-lineSince)>=150){begin(TRACK,now);cooldown=now+2800;
       if(doneCount<99)doneCount++;return false;}
     }
     return true;
@@ -211,8 +212,9 @@ struct A4Bug2 {
    float minTravel=sideDistance*0.55f;
    if(minTravel<5)minTravel=5;
    if(odom-returnStart>=minTravel&&(L||M||R)){
-    if(++lineCount>=3){target=H;begin(TURN_JOIN,now);return true;}
-   }else lineCount=0;
+    if(!lineSince)lineSince=now;
+    if(uint32_t(now-lineSince)>=150){target=H;begin(TURN_JOIN,now);return true;}
+   }else lineSince=0;
    if(odom-returnStart>sideDistance+MAX_RETURN_EXTRA_CM){
     fault(now);return true;
    }
