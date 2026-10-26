@@ -206,7 +206,7 @@ void sensors(){
   digitalWrite(US_TRIG_PIN,HIGH);delayMicroseconds(10);digitalWrite(US_TRIG_PIN,LOW);
   unsigned long duration=pulseIn(US_ECHO_PIN,HIGH,12000);rangeCm=duration?(int)(duration/58):-1;
   a4PingAt=millis();
-  const bool lookingForward=panAngle==90&&uint32_t(a4PingAt-a4PanAt)>=350;
+  const bool lookingForward=panAngle==90&&uint32_t(a4PingAt-a4PanAt)>=450;
   nearCount=(lookingForward&&rangeCm>=0&&rangeCm<=FORWARD_ESTOP_CM)?(nearCount<3?nearCount+1:3):0;
  }
  blackL=hyst(blackL,lineL);blackM=hyst(blackM,lineM);blackR=hyst(blackR,lineR);
@@ -305,7 +305,7 @@ void loop(){
    const int desired=avoid.desiredPan();
    if(desired!=panAngle)setPan(desired);
    const bool ready=panAngle==desired&&a4PingAt!=0&&
-     uint32_t(a4PingAt-a4PanAt)>=350&&uint32_t(now-a4PingAt)<240;
+     uint32_t(a4PingAt-a4PanAt)>=450&&uint32_t(now-a4PingAt)<240;
    const int sonar=ready?rangeCm:-2;
    const float segProgress=pose.dist-follower.segStart;
    owned=avoid.step(now,pose.yawDegrees,pose.yawRate,pose.dist,
