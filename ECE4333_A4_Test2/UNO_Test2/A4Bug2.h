@@ -98,7 +98,7 @@ struct A4Bug2 {
    if(nearIntersection(segment,segProgress)||
       segProgress>=(segment==0?320.0f:segment==1?151.0f:
         segment==2?220.0f:segment==3?43.0f:125.0f)-60.0f){
-     begin(WAIT,now);return true;
+     started=now;begin(WAIT,now);return true;
    }
    side=outsideOfRoute(segment);
    if(!side){fault(now);return true;}
