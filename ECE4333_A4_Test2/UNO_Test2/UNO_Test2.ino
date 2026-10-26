@@ -16,12 +16,18 @@
 #include "PoseEstimate.h"
 #include "LineFollower.h"
 #include "TrafficLite.h"
+#if A4_TEST2_ENABLED
+#include "A4Bug2.h"
+#endif
 #include "LinkTx.h"
 #if FOLLOW_ENABLED
 #include "TargetFollow.h"
 #endif
 
 PoseEstimate pose;LineFollower follower;TrafficLite traffic;
+#if A4_TEST2_ENABLED
+A4Bug2 avoid;
+#endif
 #if PAN_SERVO
 Servo pan;
 #endif
@@ -35,6 +41,7 @@ int blackLow=600,blackHigh=1023,cruise=60,echoRS=0,echoDS=40;
 uint8_t zeroRevision=0,lapsLimit=0;uint16_t runNumber=0; // lapsLimit 0 = run until STOP
 bool eStopLatched=false;uint8_t eStopReason=0,nearCount=0; // reason 1=web, 2=ultrasonic
 int lineL=0,lineM=0,lineR=0,rangeCm=-1,leftPWM=0,rightPWM=0;
+uint32_t a4PingAt=0,a4PanAt=0;
 int manualDir=9,speedSetting=90,panAngle=90;uint32_t lastRemote=0,motorsOffSince=0;
 
 // ---------- N230 sample ring (sampled on time, sent when the UART is free) ----------
@@ -51,7 +58,7 @@ bool hyst(bool was,int v){
 }
 int8_t gyroSignLearned=0;uint8_t gyroSignFlips=0; // auto-corrected gyro direction (kept until power-off)
 #if PAN_SERVO
-void setPan(int a){panAngle=constrain(a,0,180);pan.write(panAngle);}
+void setPan(int a){a=constrain(a,0,180);if(a!=panAngle)a4PanAt=millis();panAngle=a;pan.write(a);}
 #else
 #define setPan(a) ((void)0)
 #endif
@@ -65,6 +72,10 @@ void motorOutput(int left,int right){
  leftPWM=left;rightPWM=right;
 }
 void standby(){follower.stop();
+#if A4_TEST2_ENABLED
+ avoid.reset();
+#endif
+ setPan(90);
 #if FOLLOW_ENABLED
  follow.stop();
 #endif
@@ -72,6 +83,9 @@ void standby(){follower.stop();
 void latchEStop(uint8_t why){standby();eStopLatched=true;eStopReason=why;eventMask|=128;}
 void startRun(bool waitGreen,uint8_t laps){
  runNumber++;mode=6;setPan(90);pose.zero(millis());lapsLimit=laps;
+#if A4_TEST2_ENABLED
+ avoid.reset();
+#endif
  follower.cruise=cruise;follower.pivot=PIVOT_PWM;follower.crossHold=CROSS_HOLD_MS;follower.maxTurn=MAX_CORNER_DEG;
  follower.wideSweep=WIDE_SEARCH_DEG;follower.degPerMs=NO_GYRO_DEG_PER_MS;follower.blockCm=CREEP_BLOCK_CM;follower.route=ROUTE_HINT;
  follower.start(pose.yawDegrees,millis());
@@ -103,7 +117,11 @@ void command(char *text){
  int n=doc[PSTR("N")],d=doc[PSTR("D1")].orDefault(0);
  if(n==204){ // colour frame from the ESP32: R = red region >= RP pixels, G = green seen
   if(mode==6&&doc[PSTR("S")].isUInt16())traffic.colour(doc[PSTR("S")],(long)doc[PSTR("V")]==1,(long)doc[PSTR("R")]==1,(long)doc[PSTR("G")]==1,
-   follower.state==LineFollower::FOLLOW||follower.state==LineFollower::CROSS,millis());
+   (follower.state==LineFollower::FOLLOW||follower.state==LineFollower::CROSS)
+#if A4_TEST2_ENABLED
+   &&!avoid.active()
+#endif
+   ,millis());
   return;
  }
  if(n==205){ // STOP-sign AI result for our request ID
@@ -187,7 +205,9 @@ void sensors(){
   lastPing=millis();digitalWrite(US_TRIG_PIN,LOW);delayMicroseconds(2);
   digitalWrite(US_TRIG_PIN,HIGH);delayMicroseconds(10);digitalWrite(US_TRIG_PIN,LOW);
   unsigned long duration=pulseIn(US_ECHO_PIN,HIGH,12000);rangeCm=duration?(int)(duration/58):-1;
-  nearCount=(rangeCm>=0&&rangeCm<=FORWARD_ESTOP_CM)?(nearCount<3?nearCount+1:3):0;
+  a4PingAt=millis();
+  const bool lookingForward=panAngle==90&&uint32_t(a4PingAt-a4PanAt)>=350;
+  nearCount=(lookingForward&&rangeCm>=0&&rangeCm<=FORWARD_ESTOP_CM)?(nearCount<3?nearCount+1:3):0;
  }
  blackL=hyst(blackL,lineL);blackM=hyst(blackM,lineM);blackR=hyst(blackR,lineR);
  bool l=blackL,m=blackM,r=blackR;
@@ -274,8 +294,35 @@ void loop(){
   if(uint32_t(now-lastRemote)>=REMOTE_TIMEOUT_MS)standby();else directionPWM(manualDir,speedSetting,left,right);
  }else if(mode==6){
   traffic.tick(now);
-  if(traffic.stopped())follower.lastMs=now; // stand still for red / STOP sign; the follower resumes where it was
-  else{follower.distCm=pose.dist;follower.step(blackL,blackM,blackR,now,pose.yawDegrees,gyroNavigation&&pose.gyro,rangeCm,left,right);}
+  if(traffic.stopped()){
+#if A4_TEST2_ENABLED
+   if(avoid.active())avoid.fault(now);
+#endif
+   follower.lastMs=now;
+  } else {
+   bool owned=false;
+#if A4_TEST2_ENABLED
+   const int desired=avoid.desiredPan();
+   if(desired!=panAngle)setPan(desired);
+   const bool ready=panAngle==desired&&a4PingAt!=0&&
+     uint32_t(a4PingAt-a4PanAt)>=350&&uint32_t(now-a4PingAt)<240;
+   const int sonar=ready?rangeCm:-2;
+   const float segProgress=pose.dist-follower.segStart;
+   owned=avoid.step(now,pose.yawDegrees,pose.yawRate,pose.dist,
+    gyroNavigation&&pose.gyro,sonar,a4PingAt,
+    follower.state==LineFollower::FOLLOW,
+    follower.state==LineFollower::FOLLOW&&
+      uint32_t(now-follower.followAt)>=400&&
+      fabsf(LineFollower::norm180(pose.yawDegrees-follower.refYaw))<15,
+    follower.refYaw,follower.seg,segProgress,
+    blackL,blackM,blackR,left,right);
+   if(owned)follower.lastMs=now;
+   if(avoid.state==A4Bug2::FAULT){follower.fail(LineFollower::BLOCKED);left=right=0;}
+#endif
+   if(!owned){follower.distCm=pose.dist;
+    follower.step(blackL,blackM,blackR,now,pose.yawDegrees,
+      gyroNavigation&&pose.gyro,rangeCm,left,right);}
+  }
   if(follower.requestSignFlip){ // commanded a left pivot but the gyro said right: the gyro sign (GS) is reversed
    follower.requestSignFlip=false;pose.gyroSign=-pose.gyroSign;pose.yawDegrees=-pose.yawDegrees;pose.heading=-pose.heading;
    follower.negateAngles();gyroSignLearned=pose.gyroSign>0?1:-1;gyroSignFlips++;
