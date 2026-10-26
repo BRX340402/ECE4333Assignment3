@@ -24,7 +24,7 @@ struct A4Bug2 {
  static constexpr float SENSOR_TO_REAR_CM=22.0f;
  static constexpr float REAR_SAFETY_CM=5.0f;
  // Maxima are FAULT guards, NEVER target distances.
- static constexpr float MAX_SIDE_CM=42.0f, MAX_PASS_CM=95.0f;
+ static constexpr float MAX_SIDE_CM=32.0f, MAX_PASS_CM=70.0f;
  static constexpr float STEP_CM=3.0f;
  static constexpr float MAX_RETURN_EXTRA_CM=12.0f;
  static constexpr int TRIGGER_CM=20, FRONT_STOP_CM=12;
@@ -38,7 +38,8 @@ struct A4Bug2 {
  float H=0, target=0, hitDist=0, legStart=0;
  float sideDistance=0, passDistance=0, rearStart=0, returnStart=0;
  uint32_t entered=0, started=0, lastPing=0, lastGoodPing=0, cooldown=0;
- uint32_t lineSince=0;
+ uint32_t lineSince=0,forwardApprovedAt=0;
+ uint8_t forwardNoEcho=0;
  uint8_t nearCount=0, seen=0, farCount=0, silentCount=0, lineCount=0;
  int8_t side=0; // +1 left of track, -1 right of track.
  bool sawSide=false, sawRear=false;
@@ -51,9 +52,11 @@ struct A4Bug2 {
  }
  void begin(State s,uint32_t t){
   state=s;entered=t;seen=farCount=silentCount=lineCount=0;lineSince=0;
+  forwardApprovedAt=0;forwardNoEcho=0;
  }
  void reset(){state=TRACK;nearCount=seen=farCount=silentCount=lineCount=0;
-  sawSide=sawRear=false;side=0;entered=started=lastPing=lastGoodPing=lineSince=0;}
+  sawSide=sawRear=false;side=0;entered=started=lastPing=lastGoodPing=lineSince=0;
+  forwardApprovedAt=0;forwardNoEcho=0;}
  void fault(uint32_t now){
   begin(FAULT,now);if(failCount<99)failCount++;
  }
@@ -168,13 +171,13 @@ struct A4Bug2 {
   }
   if(state==SIDE_FRONT||state==PASS_FRONT){
    if(!fresh)return true;
-   if(range<0){ // no forward echo: retry, but never drive on unknown.
-    if(++silentCount>=4)fault(now);
-    return true;
+   if(range>=0&&range<=FRONT_STOP_CM+5){fault(now);return true;}
+   // A valid far echo is strong evidence. Three no-echo readings are
+   // weaker, TENTATIVE evidence: move only ONE 3 cm step and recheck.
+   if(range>=0||++silentCount>=3){
+    legStart=odom;
+    begin(state==SIDE_FRONT?SIDE_STEP:PASS_STEP,now);
    }
-   if(range<=FRONT_STOP_CM+5){fault(now);return true;}
-   legStart=odom;
-   begin(state==SIDE_FRONT?SIDE_STEP:PASS_STEP,now);
    return true;
   }
   if(state==SIDE_STEP){
@@ -221,11 +224,18 @@ struct A4Bug2 {
   }
   if(state==SIDE_STEP||state==SIDE_MARGIN||state==PASS_STEP||
      state==REAR_MARGIN||state==RETURN_STEP){
-   // Never drive with an unsettled servo or stale range data.
+   // Never drive while the servo is unsettled or a ping has gone stale.
    if(range==-2)return true;
-   if(range>=0&&range<=FRONT_STOP_CM+5){fault(now);return true;}
-   // A missing echo during forward motion is not a certified clear corridor.
-   if(range<0){fault(now);return true;}
+   if(fresh){
+    if(range>=0){
+     if(range<=FRONT_STOP_CM+5){fault(now);return true;}
+     forwardNoEcho=0;forwardApprovedAt=now;
+    }else if(++forwardNoEcho>=3){
+     // A series of empty echoes permits cautious, bounded motion only.
+     forwardApprovedAt=now;
+    }
+   }
+   if(!forwardApprovedAt||uint32_t(now-forwardApprovedAt)>300)return true;
    pd.steer(angle(target-yaw),rate,DRIVE_PWM,PIVOT_PWM,left,right);
   }
   return true;
