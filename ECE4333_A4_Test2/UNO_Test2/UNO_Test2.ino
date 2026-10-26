@@ -220,7 +220,7 @@ void physicalKey(){
 }
 
 // ---------- telemetry ----------
-char tx[256];uint16_t txPos=0,txLen=0; // longest message (N221 with every field at its widest) is checked by tests/uno_protocol_test.cpp
+char tx[288];uint16_t txPos=0,txLen=0; // longest message (N221 with every field at its widest) is checked by tests/uno_protocol_test.cpp
 int freeRam(){extern char __heap_start;extern char *__brkval;char top;return &top-(__brkval?__brkval:&__heap_start);}
 uint8_t trafficState(){ // TS shown by the web page: 0 OFF, 2 TRACK, 7 CROSS, 8 FAULT, 9-12 target following
 #if FOLLOW_ENABLED
@@ -264,9 +264,9 @@ void scheduleTx(uint32_t now){
  }
  if(statusDue){
   lastStatus=now;traffic.changed=false;
-  startTx(linkFmt(tx,sizeof(tx),PSTR("{\"N\":221,\"M\":%u,\"TS\":%u,\"ID\":%u,\"L\":%d,\"C\":%d,\"R\":%d,\"GY\":%u,\"UV\":%d,\"FR\":%d,\"UT\":%lu,\"FC\":%u,\"PL\":%d,\"PR\":%d,\"ES\":%u,\"RN\":%u,\"GN\":%u,\"ZR\":%u,\"MQ\":%u,\"IM\":%u,\"IW\":%u,\"IQ\":%u,\"IB\":%u,\"CB\":%u,\"GL\":%d,\"GF\":%u,\"SG\":%u,\"LP\":%u}\n"),
+  startTx(linkFmt(tx,sizeof(tx),PSTR("{\"N\":221,\"M\":%u,\"TS\":%u,\"ID\":%u,\"L\":%d,\"C\":%d,\"R\":%d,\"GY\":%u,\"UV\":%d,\"FR\":%d,\"UT\":%lu,\"FC\":%u,\"PL\":%d,\"PR\":%d,\"ES\":%u,\"RN\":%u,\"GN\":%u,\"ZR\":%u,\"MQ\":%u,\"IM\":%u,\"IW\":%u,\"IQ\":%u,\"IB\":%u,\"CB\":%u,\"GL\":%d,\"GF\":%u,\"SG\":%u,\"LP\":%u,\"A4\":%u}\n"),
    mode,trafficState(),traffic.req,lineL,lineM,lineR,(unsigned)pose.gyro,FIRMWARE_UV,freeRam(),(unsigned long)now,
-   (unsigned)(mode==6?follower.fault:0),leftPWM,rightPWM,(unsigned)eStopLatched,runNumber,(unsigned)gyroNavigation,(unsigned)zeroRevision,sampleSeq,(unsigned)pose.imuType,(unsigned)pose.whoMpu,(unsigned)pose.whoQmi,(unsigned)pose.busRecoveries,(unsigned)pose.calibrating,(int)gyroSignLearned,(unsigned)gyroSignFlips,(unsigned)follower.seg,(unsigned)follower.lapsDone));
+   (unsigned)(mode==6?follower.fault:0),leftPWM,rightPWM,(unsigned)eStopLatched,runNumber,(unsigned)gyroNavigation,(unsigned)zeroRevision,sampleSeq,(unsigned)pose.imuType,(unsigned)pose.whoMpu,(unsigned)pose.whoQmi,(unsigned)pose.busRecoveries,(unsigned)pose.calibrating,(int)gyroSignLearned,(unsigned)gyroSignFlips,(unsigned)follower.seg,(unsigned)follower.lapsDone,(unsigned)avoid.state));
  }
 }
 void pumpTx(){int a=Serial.availableForWrite();while(txPos<txLen&&a-->0)Serial.write(tx[txPos++]);}
