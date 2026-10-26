@@ -31,9 +31,11 @@ static const float LEFT_CM_S_PER_PWM = 0.33f, RIGHT_CM_S_PER_PWM = 0.33f;
 // edge reads in between (Test10 run 2: left sensor 550-730 on a 600 threshold) and must not flicker.
 static const int  LINE_HYST = 40;
 
+// ===== A4 Test2: keep STOP FOMO, colour detection and gyro; drop Mode 7 =====
+#define A4_TEST2_ENABLED 1 // experimental autonomous ultrasonic detour
 // ===== Test11 additions =====
 // Compile-time switches (set to 0 to hand flash back when the sketch gets tight)
-#define FOLLOW_ENABLED 1     // vision target following (mode 7); 0 removes it (about 1 KB)
+#define FOLLOW_ENABLED 0     // vision target following (mode 7); 0 removes it (about 1 KB)
 #define IMU_QMI8658 1        // also support the QMI8658 IMU; 0 = MPU6050/GY-521 only (about 0.4 KB)
 #define PAN_SERVO 1          // centre the camera pan servo at start; 0 drops the Servo library (about 0.9 KB flash, ~60 B RAM) - the servo then stays where it is
 
