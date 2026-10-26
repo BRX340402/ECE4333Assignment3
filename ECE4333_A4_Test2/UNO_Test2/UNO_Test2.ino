@@ -317,6 +317,10 @@ void loop(){
     follower.refYaw,follower.seg,segProgress,
     blackL,blackM,blackR,left,right);
    if(owned)follower.lastMs=now;
+   if(avoid.handover){
+    follower.segStart+=avoid.progressCorrection;
+    follower.refYaw=pose.yawDegrees;avoid.handover=false;
+   }
    if(avoid.state==A4Bug2::FAULT){follower.fail(LineFollower::BLOCKED);left=right=0;}
 #endif
    if(!owned){follower.distCm=pose.dist;
