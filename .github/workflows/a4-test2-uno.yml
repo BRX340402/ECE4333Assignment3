@@ -1,0 +1,19 @@
+name: A4 Test2 Arduino Uno compile
+on:
+  push:
+    branches:
+      - assignment4-test2
+  workflow_dispatch:
+jobs:
+  uno:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: arduino/setup-arduino-cli@v2
+      - name: Install AVR board core
+        run: |
+          arduino-cli core update-index
+          arduino-cli core install arduino:avr
+      - name: Compile Test2 UNO and report SRAM / Flash
+        run: |
+          arduino-cli compile --fqbn arduino:avr:uno --warnings all ECE4333_A4_Test2/UNO_Test2
