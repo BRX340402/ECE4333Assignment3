@@ -49,7 +49,7 @@ def render(folder, out=None):
         return " ".join("%.1f,%.1f" % xy(x,y) for x,y in vals)
     parts = [
         '<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d" viewBox="0 0 %d %d">'%(W,H,W,H),
-        '<rect width="100%%" height="100%%" fill="#f8fafc"/>',
+        '<rect width="100%" height="100%" fill="#f8fafc"/>',
         '<text x="25" y="32" font-family="Arial" font-size="18" fill="#1e293b">ECE 4333 Test 3 — estimated obstacle avoidance</text>',
         '<text x="25" y="51" font-family="Arial" font-size="12" fill="#64748b">PWM/gyro dead reckoning; red markers are approximate sonar projections</text>',
     ]
