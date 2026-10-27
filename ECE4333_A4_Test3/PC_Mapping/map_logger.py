@@ -15,7 +15,7 @@ Output folder logs/scan_<time>/ :
 The ESP32 keeps ~2000 lines (~3 min) in PSRAM, so a short Wi-Fi drop loses nothing:
 the logger resumes from the last index it received.
 """
-import argparse, csv, json, os, sys, time, urllib.request, urllib.error
+import argparse, csv, json, math, os, sys, time, urllib.request, urllib.error
 
 SAMPLE_FIELDS = ["q", "t_ms", "L", "C", "R", "PL", "PR", "gyro_rate_dps", "yaw_deg", "dist_cm",
                  "x_cm", "y_cm", "ultrasonic_cm", "mode", "follow_state", "gyro_ok",
@@ -31,9 +31,14 @@ A4_STATES = {
 
 def decode_a4_event(d):
     """N231 compact transition packet; position/heading are estimates, not truth."""
-    if not isinstance(d, list) or len(d) != 17:
-        raise ValueError("N231 requires 17 entries")
-    t, run, before, after, x, y, yaw10, dist10, cm, pan, seg, side, sd10, pd10, ox, oy, lost = [int(v) for v in d]
+    if not isinstance(d, list) or len(d) != 15:
+        raise ValueError("N231 requires 15 entries")
+    t, run, before, after, x, y, yaw10, dist10, cm, pan, seg, side, sd10, pd10, lost = [int(v) for v in d]
+    # Projection is an estimate: sensor forward/at robot origin assumed.
+    visible = before == 0 and after in (1, 2) and cm >= 0 and pan == 90
+    theta = math.radians(yaw10 / 10.0)
+    ox = round(x + cm * math.cos(theta)) if visible else ""
+    oy = round(y + cm * math.sin(theta)) if visible else ""
     return dict(
         t_ms=t, run=run, from_state=before, to_state=after,
         from_name=A4_STATES.get(before, "UNKNOWN"),
@@ -41,8 +46,8 @@ def decode_a4_event(d):
         x_cm=x, y_cm=y, yaw_deg=yaw10/10.0, odometry_cm=dist10/10.0,
         ultrasonic_cm=cm, pan_deg=pan, segment=seg, outside_side=side,
         sideways_cm=sd10/10.0, along_cm=pd10/10.0,
-        obstacle_x_cm="" if ox==-32768 else ox,
-        obstacle_y_cm="" if oy==-32768 else oy,
+        obstacle_x_cm=ox,
+        obstacle_y_cm=oy,
         event_queue_drops=lost,
     )
 

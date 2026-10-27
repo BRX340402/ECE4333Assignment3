@@ -7,7 +7,7 @@ struct A4EventLog {
  struct Event{
   uint32_t t;
   int32_t yaw10,dist10;
-  int16_t x,y,range,side10,pass10,ox,oy;
+  int16_t x,y,range,side10,pass10;
   uint16_t run,dropped;
   uint8_t before,after,pan,seg;
   int8_t side;

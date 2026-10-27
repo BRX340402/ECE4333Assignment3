@@ -6,18 +6,19 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "PC_Mapping"))
 from map_logger import decode_a4_event, summarize_avoidance
 
 
-def packet(t, run, before, after, obstacle=(-32768, -32768)):
+def packet(t, run, before, after):
     return [t, run, before, after, 23, 41, 123, 560, 18, 90, 1, 1,
-            140, 300, obstacle[0], obstacle[1], 0]
+            140, 300, 0]
 
 
 class EventDecoderTests(unittest.TestCase):
     def test_trigger_and_obstacle_point(self):
-        v = decode_a4_event(packet(100, 3, 0, 2, (40, 52)))
+        v = decode_a4_event(packet(100, 3, 0, 2))
         self.assertEqual(v["from_name"], "TRACK")
         self.assertEqual(v["to_name"], "TURN_OUT")
-        self.assertEqual(v["obstacle_x_cm"], 40)
+        self.assertEqual(v["obstacle_x_cm"], 41)
         self.assertEqual(v["yaw_deg"], 12.3)
+        self.assertEqual(v["obstacle_y_cm"], 45)
 
     def test_unknown_obstacle_position(self):
         v = decode_a4_event(packet(150, 3, 2, 3))
@@ -25,7 +26,7 @@ class EventDecoderTests(unittest.TestCase):
         self.assertEqual(v["obstacle_y_cm"], "")
 
     def test_success_duration(self):
-        records = [decode_a4_event(packet(100, 7, 0, 2, (40, 52))),
+        records = [decode_a4_event(packet(100, 7, 0, 2)),
                    decode_a4_event(packet(3000, 7, 14, 0))]
         runs = summarize_avoidance(records)
         self.assertEqual(len(runs), 1)

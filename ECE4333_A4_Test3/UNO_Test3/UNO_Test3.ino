@@ -72,13 +72,6 @@ void recordA4(uint8_t before,uint8_t after,uint32_t now){
  e.seg=follower.seg;e.side=avoid.side;
  e.side10=(int16_t)(avoid.sideDistance*10.0f);
  e.pass10=(int16_t)(avoid.passDistance*10.0f);
- e.ox=e.oy=-32768;
- if(before==A4Bug2::TRACK &&
-    (after==A4Bug2::TURN_OUT||after==A4Bug2::WAIT) &&
-    panAngle==90 && rangeCm>=0 && rangeCm<=A4Bug2::TRIGGER_CM){
-  e.ox=(int16_t)(pose.x+rangeCm*cosf(pose.heading));
-  e.oy=(int16_t)(pose.y+rangeCm*sinf(pose.heading));
- }
  e.dropped=eventLog.lost+(eventLog.count==A4EventLog::CAPACITY?1:0);
  eventLog.push(e);
 }
@@ -285,11 +278,11 @@ void scheduleTx(uint32_t now){
  // ESP32's existing /map-log stores this separately from unchanged N230 samples.
  A4EventLog::Event ev;
  if(eventLog.peek(ev)){
-  int n=linkFmt(tx,sizeof(tx),PSTR("{\"N\":231,\"d\":[%lu,%u,%u,%u,%d,%d,%ld,%ld,%d,%u,%u,%d,%d,%d,%d,%d,%u]}\n"),
+  int n=linkFmt(tx,sizeof(tx),PSTR("{\"N\":231,\"d\":[%lu,%u,%u,%u,%d,%d,%ld,%ld,%d,%u,%u,%d,%d,%d,%u]}\n"),
    (unsigned long)ev.t,(unsigned)ev.run,(unsigned)ev.before,(unsigned)ev.after,
    ev.x,ev.y,(long)ev.yaw10,(long)ev.dist10,ev.range,
    (unsigned)ev.pan,(unsigned)ev.seg,(int)ev.side,
-   ev.side10,ev.pass10,ev.ox,ev.oy,(unsigned)ev.dropped);
+   ev.side10,ev.pass10,(unsigned)ev.dropped);
   if(startTx(n)){eventLog.remove();return;}
  }
 #endif
