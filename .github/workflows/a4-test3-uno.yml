@@ -1,0 +1,33 @@
+name: A4 Test3 Arduino Uno compile and logger tests
+on:
+  push:
+    branches: [assignment4-test3]
+    paths:
+      - 'ECE4333_A4_Test3/**'
+      - '.github/workflows/a4-test3-uno.yml'
+  workflow_dispatch:
+jobs:
+  uno:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: arduino/setup-arduino-cli@v2
+      - name: Test obstacle state machine (host)
+        run: |
+          g++ -std=c++11 -Wall -Wextra -pedantic ECE4333_A4_Test3/tests/a4_bug2_smoke.cpp -o /tmp/a4_t3_bug2
+          /tmp/a4_t3_bug2
+          g++ -std=c++11 -Wall -Wextra -pedantic -DA4_MOVING_OVERTAKE_EXPERIMENT=1 -c ECE4333_A4_Test3/tests/a4_bug2_smoke.cpp -o /tmp/a4_t3_optional.o
+      - name: Test fixed-memory event queue (host)
+        run: |
+          g++ -std=c++11 -Wall -Wextra -pedantic ECE4333_A4_Test3/tests/a4_event_log_test.cpp -o /tmp/a4_t3_event
+          /tmp/a4_t3_event
+      - name: Test Python event decoder
+        run: |
+          python3 -m unittest discover -s ECE4333_A4_Test3/tests -p 'test_*.py'
+      - name: Install AVR core and Servo
+        run: |
+          arduino-cli core update-index
+          arduino-cli core install arduino:avr
+          arduino-cli lib install "Servo"
+      - name: Compile Test3 Arduino Uno and report SRAM / flash
+        run: arduino-cli compile --fqbn arduino:avr:uno --warnings all ECE4333_A4_Test3/UNO_Test3
