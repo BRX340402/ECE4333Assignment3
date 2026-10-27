@@ -703,7 +703,7 @@ void bridge(){
     unsigned m,t,id;if(sscanf(unoRx.c_str(),"{\"N\":221,\"M\":%u,\"TS\":%u,\"ID\":%u",&m,&t,&id)==3){if(m==6&&t==4&&(trafficMode!=6||trafficState!=4||trafficRequest!=(int)id))verifySince=millis();trafficMode=m;trafficState=t;trafficRequest=id;trafficReceived=millis();trafficTelemetry=unoRx;const char *uv=strstr(unoRx.c_str(),"\"UV\":");unoFirmware=uv?atoi(uv+5):0;}
    }else if(unoRx.startsWith("{\"N\":222,")){
     int id,ok,cs,rs,ds;if(sscanf(unoRx.c_str(),"{\"N\":222,\"ID\":%d,\"OK\":%d,\"CS\":%d,\"RS\":%d,\"DS\":%d",&id,&ok,&cs,&rs,&ds)==5&&id==settingsID&&ok==1&&cs==driveSettings.cs&&rs==driveSettings.rs&&ds==driveSettings.ds)settingsApplied=true;
-   }else lastReply=unoRx;
+   }else if(!unoRx.startsWith("{\"N\":231,"))lastReply=unoRx; // N231 already buffered by /map-log
 
    unoRx="";
   }
