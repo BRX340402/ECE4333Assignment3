@@ -32,7 +32,11 @@ static const float LEFT_CM_S_PER_PWM = 0.33f, RIGHT_CM_S_PER_PWM = 0.33f;
 static const int  LINE_HYST = 40;
 
 // ===== A4 Test2: keep STOP FOMO, colour detection and gyro; drop Mode 7 =====
-#define A4_TEST2_ENABLED 1 // experimental autonomous ultrasonic detour
+#define A4_TEST3_ENABLED 1 // static-obstacle scan/step/verify avoidance
+// OPTIONAL, OFF BY DEFAULT: experiment with pausing for ~1 second to observe
+// possible range motion before deciding to detour; NOT a verified moving
+// robot overtaking controller. Change 0 to 1 only after static tests pass.
+#define A4_MOVING_OVERTAKE_EXPERIMENT 0
 // ===== Test11 additions =====
 // Compile-time switches (set to 0 to hand flash back when the sketch gets tight)
 #define FOLLOW_ENABLED 0     // vision target following (mode 7); 0 removes it (about 1 KB)

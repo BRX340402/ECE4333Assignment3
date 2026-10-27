@@ -45,6 +45,10 @@ struct A4Bug2 {
  bool sawSide=false, sawRear=false;
  bool handover=false;float progressCorrection=0;
  uint8_t doneCount=0,failCount=0;
+#if defined(A4_MOVING_OVERTAKE_EXPERIMENT) && A4_MOVING_OVERTAKE_EXPERIMENT
+ uint32_t movingObserveAt=0;
+ int movingFirstCm=-1;
+#endif
  static float angle(float a){while(a>180)a-=360;while(a< -180)a+=360;return a;}
  bool active()const{return state!=TRACK&&state!=FAULT;}
  int desiredPan()const{
@@ -58,7 +62,11 @@ struct A4Bug2 {
  void reset(){state=TRACK;nearCount=seen=farCount=silentCount=lineCount=0;
   sawSide=sawRear=handover=false;side=0;progressCorrection=0;
   entered=started=lastPing=lastGoodPing=lineSince=0;
-  forwardApprovedAt=0;forwardNoEcho=0;}
+  forwardApprovedAt=0;forwardNoEcho=0;
+#if defined(A4_MOVING_OVERTAKE_EXPERIMENT) && A4_MOVING_OVERTAKE_EXPERIMENT
+   movingObserveAt=0;movingFirstCm=-1;
+#endif
+  }
  void fault(uint32_t now){
   begin(FAULT,now);if(failCount<99)failCount++;
  }
@@ -93,7 +101,24 @@ struct A4Bug2 {
    if(!gyroGood||!following||!settled||now<cooldown)return false;
    if(fresh)nearCount=range>=0&&range<=TRIGGER_CM?
          (nearCount<3?nearCount+1:3):0;
+   #if defined(A4_MOVING_OVERTAKE_EXPERIMENT) && A4_MOVING_OVERTAKE_EXPERIMENT
+   // OPTIONAL moving-target observation gate (default disabled):
+   // stop ~1s and look for relative range changes, not a full overtake planner.
+   if(movingObserveAt){
+    if(!fresh)return true;
+    if(uint32_t(now-movingObserveAt)<1000)return true;
+    movingObserveAt=0;
+    if(range>=TRIGGER_CM+10){nearCount=0;cooldown=now+1200;return false;}
+    if(range<0||range-movingFirstCm>=5||movingFirstCm-range>=5){
+     started=now;begin(WAIT,now);return true; // moving/uncertain -> wait safely
+    }
+   }else{
+    if(nearCount<3)return false;
+    movingFirstCm=range;movingObserveAt=now;return true;
+   }
+#else
    if(nearCount<3)return false;
+#endif
    // The figure-8 crossing is NOT a safe place for a 90-degree detour.
    if(nearIntersection(segment,segProgress)||
       segProgress>=(segment==0?320.0f:segment==1?151.0f:
@@ -127,7 +152,8 @@ struct A4Bug2 {
       // sideways movements. Compensate the odometer for the route hint.
       progressCorrection=(odom-hitDist)-passDistance;
       handover=true;begin(TRACK,now);cooldown=now+2800;
-      if(doneCount<99)doneCount++;return false;}
+      if(doneCount<99)doneCount++;
+      return false;}
     }
     return true;
    }
@@ -146,10 +172,12 @@ struct A4Bug2 {
    if(!fresh)return true;
    if(range>=0&&range<=SIDE_OBSTACLE_CM){
     if(range<8){fault(now);return true;}
-    if(seen<6)seen++;farCount=silentCount=0;
+    if(seen<6)seen++;
+    farCount=silentCount=0;
     if(state==SIDE_SCAN)sawSide=true;else sawRear=true;
    }else if(range>SIDE_OBSTACLE_CM){
-    if(farCount<6)farCount++;silentCount=0;
+    if(farCount<6)farCount++;
+    silentCount=0;
    }else if(range<0){
     if(silentCount<8)silentCount++;
    }
