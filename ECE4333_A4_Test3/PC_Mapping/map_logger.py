@@ -19,7 +19,7 @@ import argparse, csv, json, math, os, sys, time, urllib.request, urllib.error
 
 SAMPLE_FIELDS = ["q", "t_ms", "L", "C", "R", "PL", "PR", "gyro_rate_dps", "yaw_deg", "dist_cm",
                  "x_cm", "y_cm", "ultrasonic_cm", "mode", "follow_state", "gyro_ok",
-                 "L_seen", "C_seen", "R_seen", "all_black", "ev_cross", "ev_turn", "ev_search", "ev_estop"]
+                 "L_seen", "C_seen", "R_seen", "all_black", "ev_cross", "ev_turn", "ev_search", "ev_estop", "kin_heading_deg", "kin_x_cm", "kin_y_cm"]
 STATE_NAMES = {0: "IDLE", 1: "FOLLOW", 2: "CROSS", 3: "TURN", 4: "SEARCH", 5: "FAIL"}
 A4_STATES = {
     0: "TRACK", 1: "WAIT", 2: "TURN_OUT", 3: "SIDE_SCAN",
@@ -90,11 +90,14 @@ def summarize_avoidance(events):
 def decode_sample(d):
     """N230 'd' array -> dict (see UNO_Mapping.ino scheduleTx)."""
     q, t, L, C, R, pl, pr, g10, yaw10, dist_mm, x, y, u, st, k = d[:15]
-    return {"q": q, "t_ms": t, "L": L, "C": C, "R": R, "PL": pl, "PR": pr,
+    result = {"q": q, "t_ms": t, "L": L, "C": C, "R": R, "PL": pl, "PR": pr,
             "gyro_rate_dps": g10 / 10.0, "yaw_deg": yaw10 / 10.0, "dist_cm": dist_mm / 10.0,
             "x_cm": x, "y_cm": y, "ultrasonic_cm": u, "mode": st >> 4, "follow_state": st & 7, "gyro_ok": (st >> 3) & 1,
             "L_seen": k & 1, "C_seen": (k >> 1) & 1, "R_seen": (k >> 2) & 1, "all_black": (k >> 3) & 1,
             "ev_cross": (k >> 4) & 1, "ev_turn": (k >> 5) & 1, "ev_search": (k >> 6) & 1, "ev_estop": (k >> 7) & 1}
+    if len(d) >= 18:
+        result.update(kin_heading_deg=d[15] / 10.0, kin_x_cm=d[16], kin_y_cm=d[17])
+    return result
 
 
 def flatten(prefix, obj, out):
