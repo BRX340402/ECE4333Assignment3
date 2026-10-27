@@ -24,6 +24,7 @@
 | `ESP32_Test3/ESP32_Test3.ino` | ESP32 camera, existing page, UART bridge and `/map-log` buffer |
 | `PC_Mapping/map_logger.py` | records all UNO messages over Wi-Fi and exports CSV/JSONL |
 | `PC_Mapping/draw_map.py` | retained Assignment 3 map generator |
+| `PC_Mapping/draw_avoidance.py` | Test 3 PC-only SVG: estimated detour trajectory, events and obstacle point |
 | `tests/` | host C++ and Python tests |
 | `.github/workflows/a4-test3-uno.yml` | Test 3 compile / automated checks |
 
@@ -65,6 +66,7 @@ When enabled, the robot stops approximately one second to inspect the change in 
 3. Start the robot using the same mapping-run control from the ESP32 web page. Keep the PC logger running during the obstacle test.
 4. Press Ctrl+C to close the logger and write the summary files.
 5. Generate the original track map with `python draw_map.py logs/scan_YYYYMMDD_HHMMSS/samples.csv`.
+6. Generate the obstacle-avoidance plot with `python draw_avoidance.py logs/scan_YYYYMMDD_HHMMSS`. Open `avoidance_map.svg` in a browser.
 
 Output in `logs/scan_<timestamp>/`:
 
@@ -75,14 +77,15 @@ Output in `logs/scan_<timestamp>/`:
 | `status.csv` | N221 dashboard status including `A4` state |
 | `sensors.csv` | N210 battery and sonar status |
 | `avoidance_events.csv` | new N231 event: previous/next state, run, t, estimated x/y, gyro yaw, odometry, sonar distance, pan angle, segment, detour side and distances, estimated obstacle point |
-| `avoidance_runs.csv` | each detected avoidance attempt, **completed/fault/cleared/cancelled/incomplete**, elapsed time and estimated path travel |
+| `avoidance_runs.csv` | each detected avoidance attempt, **success/fault/cleared_without_detour/cancelled/incomplete**, elapsed time and estimated path travel |
+| `avoidance_map.svg` | generated separately on PC: estimated route, detour intervals, transitions and approximate obstacle point |
 | `log_summary.json` | counts and loss diagnostics |
 
-N231 uses the compact 17-element array:
+N231 uses the compact 15-element array:
 
-`[t_ms,run,from_state,to_state,x_cm,y_cm,yaw_deg*10,odometry_cm*10,sonar_cm,pan_deg,segment,side,side_cm*10,pass_cm*10,obstacle_x_cm,obstacle_y_cm,event_queue_drops]`.
+`[t_ms,run,from_state,to_state,x_cm,y_cm,yaw_deg*10,odometry_cm*10,sonar_cm,pan_deg,segment,side,side_cm*10,pass_cm*10,event_queue_drops]`.
 
-State IDs 0–15 match Test 2's `A4Bug2::State`; 16 denotes operator cancellation during an avoidance maneuver. Unknown obstacle x/y is `-32768` on the wire. The detected obstacle position is only a **rough estimate** calculated from sonar distance and robot pose; it is **not** an independently surveyed ground-truth position and does **not** yet compensate for sonar mounting offset.
+State IDs 0–15 match Test 2's `A4Bug2::State`; 16 denotes operator cancellation during an avoidance maneuver. The Python decoder estimates the obstacle x/y **on the PC** when a fresh front-facing obstacle is first detected, using yaw and ultrasonic distance. Unknown coordinates are blank. These are **rough estimates**, not independently surveyed ground truth, and they do **not** yet compensate for sonar mounting offset or beam width.
 
 ### Interpretation and reliability
 
