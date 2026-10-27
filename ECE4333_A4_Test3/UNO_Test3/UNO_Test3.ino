@@ -1,5 +1,5 @@
 #include <Arduino.h>
-// ECE 4333 Assignment 3 - TEST11 MAPPING + TARGET FOLLOWING BUILD (UV=41)
+// ECE 4333 Assignment 4 Test3: obstacle avoidance telemetry (UV=41)
 // Line following + data collection + "Stop on red" (TrafficLite: red pixels >= RP stop,
 // STOP-sign AI -> 3 s hold, red light -> wait for green). RGB LED, ultrasonic avoidance
 // and the old floor-tracking modes are removed.
@@ -16,8 +16,9 @@
 #include "PoseEstimate.h"
 #include "LineFollower.h"
 #include "TrafficLite.h"
-#if A4_TEST2_ENABLED
+#if A4_TEST3_ENABLED
 #include "A4Bug2.h"
+#include "A4EventLog.h"
 #endif
 #include "LinkTx.h"
 #if FOLLOW_ENABLED
@@ -25,8 +26,9 @@
 #endif
 
 PoseEstimate pose;LineFollower follower;TrafficLite traffic;
-#if A4_TEST2_ENABLED
+#if A4_TEST3_ENABLED
 A4Bug2 avoid;
+A4EventLog eventLog;
 #endif
 #if PAN_SERVO
 Servo pan;
@@ -57,6 +59,30 @@ bool hyst(bool was,int v){
  int t=blackHigh+(was?LINE_HYST:-LINE_HYST);return v<=t;                              // black = low readings
 }
 int8_t gyroSignLearned=0;uint8_t gyroSignFlips=0; // auto-corrected gyro direction (kept until power-off)
+#if A4_TEST3_ENABLED
+// Log only transitions. An obstacle point is an APPROXIMATE position calculated
+// with sonar range and gyro/PWM pose; sensor mounting offset has not been measured.
+void recordA4(uint8_t before,uint8_t after,uint32_t now){
+ A4EventLog::Event e={};
+ e.t=now;e.run=runNumber;e.before=before;e.after=after;
+ e.x=(int16_t)pose.x;e.y=(int16_t)pose.y;
+ e.yaw10=(int32_t)(pose.yawDegrees*10.0f);
+ e.dist10=(int32_t)(pose.dist*10.0f);
+ e.range=(int16_t)rangeCm;e.pan=(uint8_t)panAngle;
+ e.seg=follower.seg;e.side=avoid.side;
+ e.side10=(int16_t)(avoid.sideDistance*10.0f);
+ e.pass10=(int16_t)(avoid.passDistance*10.0f);
+ e.ox=e.oy=-32768;
+ if(before==A4Bug2::TRACK &&
+    (after==A4Bug2::TURN_OUT||after==A4Bug2::WAIT) &&
+    panAngle==90 && rangeCm>=0 && rangeCm<=A4Bug2::TRIGGER_CM){
+  e.ox=(int16_t)(pose.x+rangeCm*cosf(pose.heading));
+  e.oy=(int16_t)(pose.y+rangeCm*sinf(pose.heading));
+ }
+ e.dropped=eventLog.lost+(eventLog.count==A4EventLog::CAPACITY?1:0);
+ eventLog.push(e);
+}
+#endif
 #if PAN_SERVO
 void setPan(int a){a=constrain(a,0,180);if(a!=panAngle)a4PanAt=millis();panAngle=a;pan.write(a);}
 #else
@@ -72,7 +98,9 @@ void motorOutput(int left,int right){
  leftPWM=left;rightPWM=right;
 }
 void standby(){follower.stop();
-#if A4_TEST2_ENABLED
+#if A4_TEST3_ENABLED
+ if(avoid.state!=A4Bug2::TRACK&&avoid.state!=A4Bug2::FAULT)
+   recordA4((uint8_t)avoid.state,16,millis()); // 16=CANCELLED
  avoid.reset();
 #endif
  setPan(90);
@@ -83,7 +111,7 @@ void standby(){follower.stop();
 void latchEStop(uint8_t why){standby();eStopLatched=true;eStopReason=why;eventMask|=128;}
 void startRun(bool waitGreen,uint8_t laps){
  runNumber++;mode=6;setPan(90);pose.zero(millis());lapsLimit=laps;
-#if A4_TEST2_ENABLED
+#if A4_TEST3_ENABLED
  avoid.reset();
 #endif
  follower.cruise=cruise;follower.pivot=PIVOT_PWM;follower.crossHold=CROSS_HOLD_MS;follower.maxTurn=MAX_CORNER_DEG;
@@ -118,7 +146,7 @@ void command(char *text){
  if(n==204){ // colour frame from the ESP32: R = red region >= RP pixels, G = green seen
   if(mode==6&&doc[PSTR("S")].isUInt16())traffic.colour(doc[PSTR("S")],(long)doc[PSTR("V")]==1,(long)doc[PSTR("R")]==1,(long)doc[PSTR("G")]==1,
    (follower.state==LineFollower::FOLLOW||follower.state==LineFollower::CROSS)
-#if A4_TEST2_ENABLED
+#if A4_TEST3_ENABLED
    &&!avoid.active()
 #endif
    ,millis());
@@ -253,6 +281,18 @@ void scheduleTx(uint32_t now){
   startTx(linkFmt(tx,sizeof(tx),PSTR("{\"N\":222,\"ID\":%d,\"OK\":1,\"CS\":%d,\"RS\":%d,\"DS\":%d}\n"),configReply,cruise,echoRS,echoDS));configReply=-1;return;
  }
  if(pendingReply>=0){startTx(linkFmt(tx,sizeof(tx),PSTR("{\"N\":211,\"OK\":%d}\n"),(int)pendingReply));pendingReply=-1;return;}
+ #if A4_TEST3_ENABLED
+ // ESP32's existing /map-log stores this separately from unchanged N230 samples.
+ A4EventLog::Event ev;
+ if(eventLog.peek(ev)){
+  int n=linkFmt(tx,sizeof(tx),PSTR("{\"N\":231,\"d\":[%lu,%u,%u,%u,%d,%d,%ld,%ld,%d,%u,%u,%d,%d,%d,%d,%d,%u]}\n"),
+   (unsigned long)ev.t,(unsigned)ev.run,(unsigned)ev.before,(unsigned)ev.after,
+   ev.x,ev.y,(long)ev.yaw10,(long)ev.dist10,ev.range,
+   (unsigned)ev.pan,(unsigned)ev.seg,(int)ev.side,
+   ev.side10,ev.pass10,ev.ox,ev.oy,(unsigned)ev.dropped);
+  if(startTx(n)){eventLog.remove();return;}
+ }
+#endif
  bool statusDue=uint32_t(now-lastStatus)>=STATUS_MS||traffic.changed; // a traffic state change is reported at once (ESP32 starts the STOP AI)
  if(ringCount&&!traffic.changed&&!(statusDue&&uint32_t(now-lastStatus)>=STATUS_MS+250)){
   Sample &s=ring[ringHead];ringHead=(ringHead+1)%RING;ringCount--;
@@ -293,15 +333,18 @@ void loop(){
  if(mode==5){
   if(uint32_t(now-lastRemote)>=REMOTE_TIMEOUT_MS)standby();else directionPWM(manualDir,speedSetting,left,right);
  }else if(mode==6){
+#if A4_TEST3_ENABLED
+  const uint8_t prevA4=(uint8_t)avoid.state;
+#endif
   traffic.tick(now);
   if(traffic.stopped()){
-#if A4_TEST2_ENABLED
+#if A4_TEST3_ENABLED
    if(avoid.active())avoid.fault(now);
 #endif
    follower.lastMs=now;
   } else {
    bool owned=false;
-#if A4_TEST2_ENABLED
+#if A4_TEST3_ENABLED
    const int desired=avoid.desiredPan();
    if(desired!=panAngle)setPan(desired);
    const bool ready=panAngle==desired&&a4PingAt!=0&&
@@ -334,6 +377,10 @@ void loop(){
   // forward obstacle: three consecutive valid readings (~0.3 s) needed, a single noisy echo is ignored
   if(left>0&&right>0&&nearCount>=3){latchEStop(2);left=right=0;}
   if(lapsLimit&&follower.lapsDone>=lapsLimit){standby();left=right=0;} // requested laps done: the car stands at C, facing D
+#if A4_TEST3_ENABLED
+  if(mode==6 && prevA4!=(uint8_t)avoid.state)
+    recordA4(prevA4,(uint8_t)avoid.state,now);
+#endif
  }
 #if FOLLOW_ENABLED
  else if(mode==7){
