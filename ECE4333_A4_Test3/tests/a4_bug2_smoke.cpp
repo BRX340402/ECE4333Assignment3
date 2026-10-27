@@ -2,7 +2,7 @@
 // They do not validate physical obstacle geometry, ultrasound, or motor torque.
 #include <cassert>
 #include <cstdio>
-#include "../UNO_Test2/A4Bug2.h"
+#include "../UNO_Test3/A4Bug2.h"
 
 static void tick(A4Bug2 &v,uint32_t t,float yaw,float odom,int cm,uint32_t stamp,
                  bool gyro=true,uint8_t seg=1,float progress=20) {
