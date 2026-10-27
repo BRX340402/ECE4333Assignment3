@@ -1,100 +1,108 @@
-# ECE 4333 — Assignment 4 Test 2
+# ECE 4333 Assignment 4 — Test 3: Obstacle Avoidance + Data Logging
 
-**Project folder:** `ECE4333_A4_Test2`  
-**Source branch:** `assignment4-test2`  
-**Status:** **EXPERIMENTAL**. Code has not been shown to compile on Arduino Uno or run safely on the physical car. Do not assume functional based on GitHub upload.
+**Branch:** `assignment4-test3`  
+**Folder:** `ECE4333_A4_Test3`  
+**Status:** Experimental. Host tests and Arduino compilation do not establish safe physical performance.
 
-## Scope and provenance
+## Intent and source attribution
 
-- **Navigation, traffic, map and IMU foundation:** copy of the team's physically tested `ECE4333_A3_Test11_Follow`, with the UNO sketch renamed `UNO_Test2.ino` and the ESP32 sketch renamed `ESP32_Test2.ino`. Maintains UNO/ESP32 communication version **UV=41**.
-- **New avoidance algorithm:** `UNO_Test2/A4Bug2.h` written anew to combine the student's idea (servo aims the ultrasonic sensor toward obstacle boundaries; measured changes decide detour phases) with the instructor's ECE 4333 Lecture 7 **Bug 2** principle of leaving the reference line at an obstacle and rejoining the line after passing it.
-- **Not a classical mathematically complete Bug 2 algorithm:** a practical *Bug 2-inspired*, scan–step–verify rectangular detour, using gyro heading hold and infrared line recovery. Does not trace arbitrary obstacle contours continuously.
-- **NOT based on the older Test13 / Assignment4test1 Overtake.h.** No preset obstacle width or length controls determine the maneuver.
-- **Mode 7 vision target following removed from UNO** through `FOLLOW_ENABLED=0`. STOP-sign FOMO and red/green colour detection remain on ESP32. Face detection and FastLED are not in this firmware.
+- **Preserved, unchanged:** `ECE4333_A3_Test11_Follow` (working Assignment 3 baseline), and `ECE4333_A4_Test2` (previous experiment).
+- **Test 3 is a separate copy of Test 2**, including the Test 11 Figure 8 tracking, gyro pose estimator, red/green camera logic, STOP-sign FOMO and existing ESP32 dashboard.
+- **Mapping/logging source:** `ECE4333_A3_Test11_Follow/PC_Mapping/map_logger.py`, `draw_map.py` and `track_reference.json`. The same N230 and N221 formats are retained.
+- **New in Test 3:** nonblocking N231 obstacle avoidance transition events; Python CSV decoding and avoidance attempt metrics.
+- **Bug 2 claim:** Bug 2-*inspired* scan/step/verify rectangular detour, not fully classical Bug 2 contour following. No obstacle dimensions or preprogrammed obstacle length determine when it changes phase.
+- **Moving-robot overtaking is NOT active in the default code.** Test 3 is intended for a **single stationary obstacle first**, under supervision.
 
-## Code folders
+## Folder organization
 
-- `UNO_Test2/UNO_Test2.ino`: UNO main application, motor driver, line sensors, IMU, ultrasonic measurement, servo scan ownership, traffic, mapping, log and new algorithm integration.
-- `UNO_Test2/A4Bug2.h`: obstacle states and transition conditions.
-- `UNO_Test2/MapConfig.h`: `A4_TEST2_ENABLED` (1 by default), `FOLLOW_ENABLED=0`, line and motion control settings. Preserves **PIVOT_PWM=100** from the successful Test 11.
-- `ESP32_Test2/ESP32_Test2.ino`: matching ESP32 camera/traffic/wireless program copied from Test 11. The ESP32 does not decide obstacle movements.
-- `Arduino_Libraries/`: model and servo library archives; install required compatible libraries per your existing Test 11 setup.
-- `.github/workflows/a4-test2-uno.yml`: Arduino UNO compile check, where GitHub Actions is enabled.
+| Folder | Role |
+|---|---|
+| `UNO_Test3/UNO_Test3.ino` | Arduino Uno: motion, IR sensors, ultrasonic panning, AI traffic integration, telemetry |
+| `UNO_Test3/A4Bug2.h` | avoidance state machine (copied from Test 2 plus commented optional observation gate) |
+| `UNO_Test3/A4EventLog.h` | 3-event fixed-memory FIFO for transitions |
+| `UNO_Test3/MapConfig.h` | Arduino link settings, calibration constants, optional policy switch |
+| `ESP32_Test3/ESP32_Test3.ino` | ESP32 camera, existing page, UART bridge and `/map-log` buffer |
+| `PC_Mapping/map_logger.py` | records all UNO messages over Wi-Fi and exports CSV/JSONL |
+| `PC_Mapping/draw_map.py` | retained Assignment 3 map generator |
+| `tests/` | host C++ and Python tests |
+| `.github/workflows/a4-test3-uno.yml` | Test 3 compile / automated checks |
 
-## Avoidance stages — no fixed obstacle path
+**Use the matching Test 3 Arduino + ESP32 sketches.** The UART still uses `19200` baud and reports protocol `UV=41`. The ESP32 must have the same STOP-sign model library as your tested Test 11 setup; GitHub Actions currently compiles **only Arduino Uno**, not the ESP32 ML firmware.
 
-1. TRACK: follow black line, while reading forward ultrasound. Confirm obstacle with three fresh readings within 20 cm.
-2. WAIT: do not begin a detour too close to the route's estimated intersection or corner. Wait for clearing; then proceed on the line, or stop on timeout.
-3. TURN_OUT: use gyro to pivot 90 degrees toward the outside selected from reference route heading. **Verify that route-based outside side is physically correct on the actual track**. Low torque from old robot builds prompted retaining minimum pivot PWM 100.
-4. SIDE_SCAN: while stopped, turn the **shared camera/sonar servo** inward (nominally 30/150 degrees). Observe the original obstacle. Take repeated measurements. Three reliable far echoes, or five repeated no-echo observations *after first seeing the object*, are candidates that its side edge has been crossed.
-5. SIDE_FRONT / SIDE_STEP: point sonar forward; check space; move 3 cm sideways; stop and scan inward again. Each step is a sensor-controlled decision. A repeated no-echo result is treated only as tentative clearance and the robot must remeasure after each short step.
-6. SIDE_MARGIN: after finding the side edge, move the distance required by robot half-width plus safety allowance. This is a body-clearance rule, not a guessed obstacle width.
-7. TURN_ALONG / PASS_SCAN / PASS_FRONT / PASS_STEP: rotate back to the route heading and monitor the obstacle sideways during repeated short forward advances. The obstacle's end is detected from repeat observations, not a preprogrammed object length.
-8. REAR_MARGIN: advance from the observed rear edge by sonar-to-rear-body offset plus rear safety margin.
-9. TURN_IN / RETURN_STEP: pivot 90 degrees toward the black line and approach it. The estimated sideways displacement caps the return search but **does not substitute for real infrared tape detection**.
-10. TURN_JOIN: rotate to the original route heading. Require a stable central black-line reading and gyro alignment before returning control to the old line follower. Correct the map segment progress so sidestepping is not counted as route length.
+## Default obstacle avoidance
 
-**Safety limits** in `A4Bug2.h`, for example `MAX_SIDE_CM=32` and `MAX_PASS_CM=70`, are failure guards; they are **not** programmed travel targets. Reaching them without detecting the obstacle edge results in a fault and motor stop.
+1. Follow the line and require three **fresh valid** ultrasonic readings of an obstacle within 20 cm.
+2. If too close to the inferred Figure 8 crossing or end of segment, WAIT rather than begin an unsafe detour.
+3. Otherwise pivot 90 degrees toward the supposed outside, using the gyro.
+4. Scan toward the obstacle while stopped. Take short sensor-checked sideways steps, determine the detected edge, and add a *robot-body* clearance margin.
+5. Rotate along the path, take repeated forward steps while scanning sideways, detect the end of the obstacle, and add measured rear-body clearance.
+6. Return toward the line, confirm IR tape and heading, and hand over to Test 11 tracking.
+7. Timeout, stale echo, gyro failure or an unsafe front reading must produce a fault and motor stop.
 
-## Important adjustable chassis measurements
+**Critical limitation:** Outside-of-track choice currently uses a route-heading heuristic; measure and check each segment on the real Figure 8. The actual robot width, sonar offset, servo left/right orientation, PWM speed and turn torque remain to be verified. No-echo is not proof of empty space.
 
-These are initial **unverified estimates**, not facts from a robot datasheet:
+## Optional moving-target observation logic (OFF by default)
+
+**File:** `UNO_Test3/MapConfig.h`. Search for:
 
 ```cpp
-static constexpr float ROBOT_WIDTH_CM=15.0f;
-static constexpr float SIDE_SAFETY_CM=5.0f;
-static constexpr float SENSOR_TO_REAR_CM=22.0f;
-static constexpr float REAR_SAFETY_CM=5.0f;
-static constexpr float STEP_CM=3.0f;
-static constexpr int PAN_LEFT=30, PAN_CENTER=90, PAN_RIGHT=150;
+#define A4_MOVING_OVERTAKE_EXPERIMENT 0
 ```
 
-Measure chassis width, rear overhang relative to ultrasonic sensor, and sensor pan direction. The actual pan angles are mounting-dependent. NEVER reverse the wheel turn direction merely to compensate for the pan servo orientation; calibrate them separately.
+To compile the *optional experimental observation gate*, change **0 to 1**; to revert, set it back to **0**. Its code is surrounded by `#if defined(A4_MOVING_OVERTAKE_EXPERIMENT) && A4_MOVING_OVERTAKE_EXPERIMENT` in `UNO_Test3/A4Bug2.h`.
 
-## Diagnostics
+When enabled, the robot stops approximately one second to inspect the change in range. Significant movement causes a conservative WAIT rather than a blind detour. **This is NOT a fully implemented, validated moving-robot overtaking function** and should not be treated as permission to demonstrate overtaking a moving robot. First validate the stationary obstacle behavior and track-side rule. The default requires no uncommenting and does not run this optional code.
 
-UNO status message `N221` now adds an `"A4"` integer with states:
+## Data logging: reuse your teammate's Assignment 3 workflow
 
-| A4 code | Meaning |
-|---:|---|
-| 0 | TRACK |
-| 1 | WAIT |
-| 2 | TURN_OUT |
-| 3 | SIDE_SCAN |
-| 4 | SIDE_FRONT |
-| 5 | SIDE_STEP |
-| 6 | SIDE_MARGIN |
-| 7 | TURN_ALONG |
-| 8 | PASS_SCAN |
-| 9 | PASS_FRONT |
-| 10 | PASS_STEP |
-| 11 | REAR_MARGIN |
-| 12 | TURN_IN |
-| 13 | RETURN_STEP |
-| 14 | TURN_JOIN |
-| 15 | FAULT |
+1. Connect the PC to the ESP32 hotspot `ECE4333_A2_V2`, as in the tested Test 11 system.
+2. From `ECE4333_A4_Test3/PC_Mapping`, run:
 
-The Test 11 ESP32 code may show the raw `N221` line rather than a dedicated A4 widget. Do not assume it is displayed on the existing map webpage.
+   ```bash
+   python map_logger.py --from-start
+   ```
 
-## Verification and safety sequence
+3. Start the robot using the same mapping-run control from the ESP32 web page. Keep the PC logger running during the obstacle test.
+4. Press Ctrl+C to close the logger and write the summary files.
+5. Generate the original track map with `python draw_map.py logs/scan_YYYYMMDD_HHMMSS/samples.csv`.
 
-1. Preserve the working Test 11 firmware and any A4 Test1 firmware separately; this new branch does not overwrite either.
-2. Run GitHub Actions / Arduino IDE Verify with board **Arduino Uno**. Save actual Flash and static SRAM totals. Firmware may exceed Flash: removing Mode 7 saves memory but the new state machine adds code. **Do not upload if Verify fails.**
-3. Verify UNO reports `UV=41` when ESP32 Test2 is installed (both built from this directory). Do not pair with A4test1 UV=43.
-4. Motors disconnected/wheels raised: manually pan servo to 30°, 90°, 150°, verify physical left/centre/right. Ultrasonic is an HC-SR04-style sonar, **not LiDAR**.
-5. Secure the robot with the wheels off the floor and verify gyroscope sign and PWM-100 turning. Do not test on the Figure 8 yet.
-6. Confirm forward sonar echo readings and timeout behavior, including no-echo. Missing echo may mean nothing is present, or simply an unreflective object: there is no collision-free guarantee from one sonar.
-7. Start with slow movement and one stationary box in an empty, supervised area with an accessible physical power switch. Check A4 states and actual distance against the PWM-based estimator.
-8. Verify recovery onto the correct black line and correct direction. Test outside-of-track side selection independently at each permissible route segment.
-9. Test STOP sign on both sides, red/green traffic behaviour and full Figure 8 **separately**, then test in combination. The original right-side STOP sign issue is **not fixed** by this avoidance change.
-10. Only after acceptable physical tests attempt the full Assignment 4 demonstration. A single servo looks sideward during a detour so forward monitoring and STOP sign vision can be temporarily impaired. Keep people away from its path.
+Output in `logs/scan_<timestamp>/`:
 
-## Unverified / known engineering limitations
+| File | Contents |
+|---|---|
+| `raw.jsonl` | every unmodified UNO JSON message plus PC/ESP32 receive timestamp |
+| `samples.csv` | original N230 line, motor, ultrasonic and pose samples (~10 Hz) |
+| `status.csv` | N221 dashboard status including `A4` state |
+| `sensors.csv` | N210 battery and sonar status |
+| `avoidance_events.csv` | new N231 event: previous/next state, run, t, estimated x/y, gyro yaw, odometry, sonar distance, pan angle, segment, detour side and distances, estimated obstacle point |
+| `avoidance_runs.csv` | each detected avoidance attempt, **completed/fault/cleared/cancelled/incomplete**, elapsed time and estimated path travel |
+| `log_summary.json` | counts and loss diagnostics |
 
-- The build was not compiled in the authoring environment, and no robot was available for a physical test.
-- No wheel encoders. All distances are estimated from motor PWM/time and can be wrong due to slip or battery voltage.
-- The same servo controls camera AND ultrasonic orientation; the camera can miss signs while looking sideways.
-- One ultrasonic sensor cannot continuously measure ahead and to the side simultaneously. Short stopped scans reduce but do not eliminate this limitation.
-- No-echo clearance is tentative, not positive proof. Geometry and beam width may cause an apparent edge before the full chassis has passed it.
-- Route-side inference based on the next corner is a heuristic that must be compared with the instructor's physical outside-track rule.
-- No continuous collision-free guarantee or implementation of general moving-obstacle overtaking.
+N231 uses the compact 17-element array:
+
+`[t_ms,run,from_state,to_state,x_cm,y_cm,yaw_deg*10,odometry_cm*10,sonar_cm,pan_deg,segment,side,side_cm*10,pass_cm*10,obstacle_x_cm,obstacle_y_cm,event_queue_drops]`.
+
+State IDs 0–15 match Test 2's `A4Bug2::State`; 16 denotes operator cancellation during an avoidance maneuver. Unknown obstacle x/y is `-32768` on the wire. The detected obstacle position is only a **rough estimate** calculated from sonar distance and robot pose; it is **not** an independently surveyed ground-truth position and does **not** yet compensate for sonar mounting offset.
+
+### Interpretation and reliability
+
+- **Estimated** pose comes from gyro integration + PWM/time-based wheel dead reckoning, not encoders.
+- For professor-required **actual** pose/heading, measure known positions and heading manually during controlled trials and compare against `samples.csv`; these values are **not generated automatically**.
+- `avoidance_runs.csv` labels **software state-machine completion**, not collision-free physical success. Film and verify actual maneuvers.
+- Event FIFO is only 3 records; if it overflows, `event_queue_drops` increases. Wi-Fi map-log ring can separately overwrite older messages. Monitor both counters.
+- Logging captures **state transitions** rather than every ultrasonic echo; periodic N230 samples contain sonar measurements. A single pan servo cannot monitor forward and sideways simultaneously.
+
+## Suggested test order
+
+1. Verify GitHub Actions for the latest Test 3 commit (Arduino Uno must compile, memory within limits).
+2. Motors disconnected / wheels off the floor: verify servo pan 30°/90°/150° and sonar echo; verify gyro sign and actual left/right pivot direction.
+3. Measure chassis width, sensor-to-rear distance, and the real motor/PWM distance model. Replace the **unverified estimates** in `A4Bug2.h`.
+4. Capture stationary sensor and gyro data with the logger (no driving). Inspect `status.csv` and `raw.jsonl`.
+5. Test one stationary box on an empty straight segment at low speed, with a physical power switch accessible. Confirm the A4 state sequence and logging. **Do not start on the crossing**.
+6. Independently confirm the outside turn on each allowable section of the Figure 8; only then combine with STOP-sign and red/green tests.
+7. Run multiple measured trials with different static obstacle sizes/shapes, log success/fault, stop-sign rule compliance and physical trajectory.
+8. Only after these pass, discuss and independently validate **moving-target overtaking**.
+
+## Course deliverable reminder
+
+Assignment 4 requires performance evaluation, mapping/logging, estimated **and actual** pose comparisons, sign and obstacle positions in an inertial frame, completion time, average speed, state transitions and a written report. Test 3 now creates the obstacle transition data but does not itself satisfy every measurement or moving-robot demonstration requirement.
