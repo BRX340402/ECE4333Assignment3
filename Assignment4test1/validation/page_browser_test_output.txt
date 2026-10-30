@@ -1,0 +1,22 @@
+follow calls [('/follow-start', 'color=r&w=300&fov=62&mirror=1&kp=15&kd=10')]
+message: Following the red target 跟随中
+start calls ('/traffic-start', 'green=1&laps=2&pan=0&lead=60&passes=1&slow=100&ovt=0&trig=35&par=45&join=8')
+runs: [['live', 'Latest run (live)'], ['0', 'Run 1 - 979 samples, 110 s'], ['1', 'Follow run 2 - 160 samples, 16 s']]
+summary tail:
+Target-following summary (run 2 of 2, 160 samples, 15.9 s)
+first target lock: 0.0 s; arrived at stop width: 10.4 s; target lost 0 time(s)
+heading error of the inner loop while tracking (rms): 4.1 deg; final target width 260 per mille of the image
+distance driven (odometer): 1359.6 cm; end point fused (1258, 486) cm, predicted (1286, 416) cm, gap 75.4 cm
+predicted heading minus gyro heading: at the end -0.9 deg, rms 2.1 deg
+pred layer gone: True
+state chart: False  transitions rows: 0
+line run: state chart: True  obstacle drawn: True  stop drawn: True
+['state machine: 50 transitions; time in each state: TRACK 86.7 s, CROSSING 2.2 s, CORNER TURN 2.6 s, STOP SIGN (3 s) 4.5 s, OVERTAKE: OUT 3.4 s, OVERTAKE: PASS 6.7 s, OVERTAKE: RETURN 3.5 s', 'overtaking: 1 manoeuvre(s): 1) 13.4 s, finished, back on the line, obstacle at (310, -71) cm', 'estimated STOP sign position(s) (stopping pose + 35 cm ahead): (54, 35); traffic light: start point (0, 0)', 'self-check of traffic rules: STOP holds shorter than 3 s: 0; off-road episodes longer than 3 s (line search): 0']
+seg table wrong-way flags: 0  turn col: True
+follow summary:
+Target-following summary (run 2 of 2, 160 samples, 15.9 s)
+first target lock: 0.0 s; arrived at stop width: 10.4 s; target lost 0 time(s)
+heading error of the inner loop while tracking (rms): 4.1 deg; final target width 260 per mille of the image
+distance driven (odometer): 1359.6 cm; end point fused (1258, 486) cm, predicted (1286, 416) cm, gap 75.4 cm
+predicted heading minus gyro heading: at the end -0.9 deg, rms 2.1 deg
+ERRORS []

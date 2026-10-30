@@ -1,0 +1,146 @@
+PASS params#0 static, C-O (65 cm)                : lap done ovtOk=1 fail=0 side=1 outside=1 time=14.2s minGap=14.8cm laps=2 
+PASS params#0 static, C-O (65 cm)                : lap done ovtOk=1 fail=0 side=1 outside=1 time=14.4s minGap=17.3cm laps=2 
+PASS params#0 static, C-O (65 cm)                : lap done ovtOk=1 fail=0 side=1 outside=1 time=14.2s minGap=15.1cm laps=2 
+PASS params#0 static, C-O (65 cm)                : lap done ovtOk=1 fail=0 side=1 outside=1 time=14.3s minGap=15.6cm laps=2 
+PASS params#0 static, O-D (222 cm)               : lap done ovtOk=2 fail=0 side=1 outside=1 time=28.4s minGap=15.5cm laps=2 
+PASS params#0 static, O-D (222 cm)               : lap done ovtOk=2 fail=0 side=1 outside=1 time=28.5s minGap=14.9cm laps=2 
+PASS params#0 static, O-D (222 cm)               : lap done ovtOk=2 fail=0 side=1 outside=1 time=28.5s minGap=14.6cm laps=2 
+PASS params#0 static, O-D (222 cm)               : lap done ovtOk=2 fail=0 side=1 outside=1 time=28.7s minGap=16.7cm laps=2 
+PASS params#0 static, O-D (232 cm)               : lap done ovtOk=2 fail=0 side=1 outside=1 time=34.5s minGap=14.3cm laps=2 
+PASS params#0 static, O-D (232 cm)               : lap done ovtOk=2 fail=0 side=1 outside=1 time=28.6s minGap=16.6cm laps=2 
+PASS params#0 static, O-D (232 cm)               : lap done ovtOk=2 fail=0 side=1 outside=1 time=34.4s minGap=14.1cm laps=2 
+PASS params#0 static, O-D (232 cm)               : lap done ovtOk=2 fail=0 side=1 outside=1 time=28.4s minGap=15.6cm laps=2 
+PASS params#0 static big r=12, O-D (225 cm)      : lap done ovtOk=2 fail=0 side=1 outside=1 time=31.4s minGap=18.7cm laps=2 
+PASS params#0 static big r=12, O-D (225 cm)      : lap done ovtOk=2 fail=0 side=1 outside=1 time=31.1s minGap=17.6cm laps=2 
+PASS params#0 static big r=12, O-D (225 cm)      : lap done ovtOk=2 fail=0 side=1 outside=1 time=31.1s minGap=17.9cm laps=2 
+PASS params#0 static big r=12, O-D (225 cm)      : lap done ovtOk=2 fail=0 side=1 outside=1 time=31.3s minGap=18.3cm laps=2 
+FAIL params#0 slow robot 5 cm/s, from 215 cm     : no lap ovtOk=0 fail=0 side=1 outside=1 time=6.0s minGap=11.4cm laps=0 E-STOP
+FAIL params#0 slow robot 5 cm/s, from 215 cm     : no lap ovtOk=0 fail=0 side=1 outside=1 time=6.0s minGap=11.4cm laps=0 E-STOP
+FAIL params#0 slow robot 5 cm/s, from 215 cm     : no lap ovtOk=0 fail=0 side=1 outside=1 time=6.0s minGap=11.4cm laps=0 E-STOP
+FAIL params#0 slow robot 5 cm/s, from 215 cm     : no lap ovtOk=0 fail=0 side=1 outside=1 time=6.0s minGap=11.4cm laps=0 E-STOP
+PASS params#0 no room: static, C-O (110 cm)      : no lap ovtOk=0 fail=0 side=1 outside=1 time=0.0s minGap=42.3cm laps=0 timeout
+PASS params#0 no room: static, C-O (110 cm)      : no lap ovtOk=0 fail=0 side=1 outside=1 time=0.0s minGap=42.3cm laps=0 timeout
+PASS params#0 no room: static, C-O (110 cm)      : no lap ovtOk=0 fail=0 side=1 outside=1 time=0.0s minGap=42.3cm laps=0 timeout
+PASS params#0 no room: static, C-O (110 cm)      : no lap ovtOk=0 fail=0 side=1 outside=1 time=0.0s minGap=42.3cm laps=0 timeout
+PASS params#0 no room: static, O-D (280 cm)      : no lap ovtOk=0 fail=0 side=1 outside=1 time=0.0s minGap=42.5cm laps=0 timeout
+PASS params#0 no room: static, O-D (280 cm)      : no lap ovtOk=0 fail=0 side=1 outside=1 time=0.0s minGap=42.5cm laps=0 timeout
+PASS params#0 no room: static, O-D (280 cm)      : no lap ovtOk=0 fail=0 side=1 outside=1 time=0.0s minGap=42.5cm laps=0 timeout
+PASS params#0 no room: static, O-D (280 cm)      : no lap ovtOk=0 fail=0 side=1 outside=1 time=0.0s minGap=42.5cm laps=0 timeout
+PASS params#0 no room: static, D-E (400 cm)      : lap done ovtOk=2 fail=0 side=1 outside=1 time=28.7s minGap=15.7cm laps=2 
+PASS params#0 no room: static, D-E (400 cm)      : lap done ovtOk=2 fail=0 side=1 outside=1 time=35.2s minGap=17.8cm laps=2 
+PASS params#0 no room: static, D-E (400 cm)      : lap done ovtOk=2 fail=0 side=1 outside=1 time=41.2s minGap=19.1cm laps=2 
+PASS params#0 no room: static, D-E (400 cm)      : lap done ovtOk=2 fail=0 side=1 outside=1 time=41.4s minGap=19.3cm laps=2 
+FAIL params#0 no room: static, B-C (790 cm)      : no lap ovtOk=0 fail=1 side=-1 outside=-1 time=24.2s minGap=24.7cm laps=1 OVERTAKE FAIL
+PASS params#0 no room: static, B-C (790 cm)      : lap done ovtOk=2 fail=0 side=-1 outside=-1 time=42.9s minGap=23.3cm laps=2 
+FAIL params#0 no room: static, B-C (790 cm)      : no lap ovtOk=0 fail=1 side=-1 outside=-1 time=24.4s minGap=26.2cm laps=1 OVERTAKE FAIL
+PASS params#0 no room: static, B-C (790 cm)      : lap done ovtOk=2 fail=0 side=-1 outside=-1 time=43.0s minGap=23.6cm laps=2 
+FAIL params#1 static, C-O (65 cm)                : no lap ovtOk=1 fail=0 side=1 outside=1 time=17.3s minGap=10.3cm laps=1 left route at (91,-45) th=-98 d=45 ovt=7
+FAIL params#1 static, C-O (65 cm)                : no lap ovtOk=1 fail=1 side=1 outside=1 time=27.9s minGap=15.2cm laps=1 OVERTAKE FAIL
+FAIL params#1 static, C-O (65 cm)                : no lap ovtOk=1 fail=1 side=1 outside=1 time=28.1s minGap=16.3cm laps=1 OVERTAKE FAIL
+FAIL params#1 static, C-O (65 cm)                : no lap ovtOk=1 fail=1 side=1 outside=1 time=28.1s minGap=14.4cm laps=1 OVERTAKE FAIL
+PASS params#1 static, O-D (222 cm)               : lap done ovtOk=2 fail=0 side=1 outside=1 time=34.9s minGap=17.8cm laps=2 
+PASS params#1 static, O-D (222 cm)               : lap done ovtOk=2 fail=0 side=1 outside=1 time=35.0s minGap=18.7cm laps=2 
+PASS params#1 static, O-D (222 cm)               : lap done ovtOk=2 fail=0 side=1 outside=1 time=34.9s minGap=17.8cm laps=2 
+PASS params#1 static, O-D (222 cm)               : lap done ovtOk=2 fail=0 side=1 outside=1 time=34.9s minGap=16.9cm laps=2 
+PASS params#1 static, O-D (232 cm)               : lap done ovtOk=2 fail=0 side=1 outside=1 time=46.9s minGap=16.6cm laps=2 
+PASS params#1 static, O-D (232 cm)               : lap done ovtOk=2 fail=0 side=1 outside=1 time=46.9s minGap=17.5cm laps=2 
+PASS params#1 static, O-D (232 cm)               : lap done ovtOk=2 fail=0 side=1 outside=1 time=46.8s minGap=16.5cm laps=2 
+PASS params#1 static, O-D (232 cm)               : lap done ovtOk=2 fail=0 side=1 outside=1 time=47.3s minGap=19.8cm laps=2 
+PASS params#1 static big r=12, O-D (225 cm)      : lap done ovtOk=2 fail=0 side=1 outside=1 time=38.0s minGap=20.1cm laps=2 
+PASS params#1 static big r=12, O-D (225 cm)      : lap done ovtOk=2 fail=0 side=1 outside=1 time=37.8s minGap=19.8cm laps=2 
+PASS params#1 static big r=12, O-D (225 cm)      : lap done ovtOk=2 fail=0 side=1 outside=1 time=37.7s minGap=18.6cm laps=2 
+PASS params#1 static big r=12, O-D (225 cm)      : lap done ovtOk=2 fail=0 side=1 outside=1 time=37.8s minGap=17.7cm laps=2 
+FAIL params#1 slow robot 5 cm/s, from 215 cm     : no lap ovtOk=0 fail=0 side=1 outside=1 time=2.7s minGap=22.0cm laps=0 E-STOP
+FAIL params#1 slow robot 5 cm/s, from 215 cm     : no lap ovtOk=0 fail=0 side=1 outside=1 time=2.7s minGap=22.0cm laps=0 E-STOP
+FAIL params#1 slow robot 5 cm/s, from 215 cm     : no lap ovtOk=0 fail=0 side=1 outside=1 time=2.7s minGap=22.0cm laps=0 E-STOP
+FAIL params#1 slow robot 5 cm/s, from 215 cm     : no lap ovtOk=0 fail=0 side=1 outside=1 time=2.7s minGap=22.0cm laps=0 E-STOP
+PASS params#1 no room: static, C-O (110 cm)      : no lap ovtOk=0 fail=0 side=1 outside=1 time=0.0s minGap=44.7cm laps=0 timeout
+PASS params#1 no room: static, C-O (110 cm)      : no lap ovtOk=0 fail=0 side=1 outside=1 time=0.0s minGap=44.7cm laps=0 timeout
+PASS params#1 no room: static, C-O (110 cm)      : no lap ovtOk=0 fail=0 side=1 outside=1 time=0.0s minGap=44.7cm laps=0 timeout
+PASS params#1 no room: static, C-O (110 cm)      : no lap ovtOk=0 fail=0 side=1 outside=1 time=0.0s minGap=44.7cm laps=0 timeout
+PASS params#1 no room: static, O-D (280 cm)      : no lap ovtOk=0 fail=0 side=1 outside=1 time=0.0s minGap=46.1cm laps=0 timeout
+PASS params#1 no room: static, O-D (280 cm)      : no lap ovtOk=0 fail=0 side=1 outside=1 time=0.0s minGap=46.1cm laps=0 timeout
+PASS params#1 no room: static, O-D (280 cm)      : no lap ovtOk=0 fail=0 side=1 outside=1 time=0.0s minGap=44.6cm laps=0 timeout
+PASS params#1 no room: static, O-D (280 cm)      : no lap ovtOk=0 fail=0 side=1 outside=1 time=0.0s minGap=46.1cm laps=0 timeout
+PASS params#1 no room: static, D-E (400 cm)      : no lap ovtOk=1 fail=0 side=1 outside=1 time=18.4s minGap=21.5cm laps=1 left route at (278,-102) th=-125 d=45 ovt=6
+PASS params#1 no room: static, D-E (400 cm)      : lap done ovtOk=2 fail=0 side=1 outside=1 time=34.4s minGap=15.6cm laps=2 
+PASS params#1 no room: static, D-E (400 cm)      : lap done ovtOk=2 fail=0 side=1 outside=1 time=34.6s minGap=19.7cm laps=2 
+PASS params#1 no room: static, D-E (400 cm)      : lap done ovtOk=2 fail=0 side=1 outside=1 time=37.0s minGap=21.7cm laps=2 
+FAIL params#1 no room: static, B-C (790 cm)      : no lap ovtOk=0 fail=1 side=-1 outside=-1 time=19.8s minGap=23.1cm laps=0 OVERTAKE FAIL
+PASS params#1 no room: static, B-C (790 cm)      : no lap ovtOk=0 fail=0 side=-1 outside=-1 time=0.0s minGap=35.3cm laps=0 timeout
+PASS params#1 no room: static, B-C (790 cm)      : no lap ovtOk=0 fail=0 side=-1 outside=-1 time=0.0s minGap=25.8cm laps=0 left route at (-3,86) th=-150 d=45 ovt=5
+PASS params#1 no room: static, B-C (790 cm)      : no lap ovtOk=0 fail=0 side=-1 outside=-1 time=0.0s minGap=26.3cm laps=0 left route at (2,93) th=-156 d=45 ovt=5
+PASS params#2 static, C-O (65 cm)                : lap done ovtOk=1 fail=0 side=1 outside=1 time=27.7s minGap=15.0cm laps=2 
+FAIL params#2 static, C-O (65 cm)                : no lap ovtOk=0 fail=0 side=1 outside=1 time=0.0s minGap=14.8cm laps=1 left route at (86,-45) th=-91 d=45 ovt=7
+FAIL params#2 static, C-O (65 cm)                : no lap ovtOk=0 fail=0 side=1 outside=1 time=0.0s minGap=14.0cm laps=1 left route at (85,-45) th=-93 d=45 ovt=7
+FAIL params#2 static, C-O (65 cm)                : no lap ovtOk=0 fail=0 side=1 outside=1 time=0.0s minGap=14.2cm laps=1 left route at (85,-45) th=-92 d=45 ovt=7
+FAIL params#2 static, O-D (222 cm)               : no lap ovtOk=1 fail=0 side=1 outside=1 time=26.8s minGap=17.8cm laps=1 E-STOP
+PASS params#2 static, O-D (222 cm)               : lap done ovtOk=2 fail=0 side=1 outside=1 time=54.3s minGap=15.3cm laps=2 
+PASS params#2 static, O-D (222 cm)               : lap done ovtOk=2 fail=0 side=1 outside=1 time=53.8s minGap=16.3cm laps=2 
+PASS params#2 static, O-D (222 cm)               : lap done ovtOk=2 fail=0 side=1 outside=1 time=53.8s minGap=16.0cm laps=2 
+PASS params#2 static, O-D (232 cm)               : lap done ovtOk=1 fail=0 side=1 outside=1 time=26.6s minGap=17.0cm laps=2 
+FAIL params#2 static, O-D (232 cm)               : no lap ovtOk=1 fail=0 side=1 outside=1 time=26.7s minGap=17.8cm laps=1 E-STOP
+PASS params#2 static, O-D (232 cm)               : lap done ovtOk=2 fail=0 side=1 outside=1 time=53.6s minGap=15.7cm laps=2 
+PASS params#2 static, O-D (232 cm)               : lap done ovtOk=2 fail=0 side=1 outside=1 time=53.6s minGap=16.4cm laps=2 
+FAIL params#2 static big r=12, O-D (225 cm)      : no lap ovtOk=1 fail=0 side=1 outside=1 time=28.6s minGap=18.3cm laps=1 E-STOP
+PASS params#2 static big r=12, O-D (225 cm)      : lap done ovtOk=2 fail=0 side=1 outside=1 time=57.2s minGap=17.1cm laps=2 
+PASS params#2 static big r=12, O-D (225 cm)      : lap done ovtOk=2 fail=0 side=1 outside=1 time=57.4s minGap=17.1cm laps=2 
+PASS params#2 static big r=12, O-D (225 cm)      : lap done ovtOk=2 fail=0 side=1 outside=1 time=57.2s minGap=16.9cm laps=2 
+FAIL params#2 slow robot 5 cm/s, from 215 cm     : no lap ovtOk=0 fail=0 side=1 outside=1 time=0.0s minGap=23.4cm laps=0 left route at (310,-72) th=-97 d=45 ovt=5
+FAIL params#2 slow robot 5 cm/s, from 215 cm     : no lap ovtOk=0 fail=0 side=0 outside=0 time=0.0s minGap=23.4cm laps=0 E-STOP
+FAIL params#2 slow robot 5 cm/s, from 215 cm     : no lap ovtOk=0 fail=0 side=0 outside=0 time=0.0s minGap=23.4cm laps=0 E-STOP
+FAIL params#2 slow robot 5 cm/s, from 215 cm     : no lap ovtOk=0 fail=0 side=0 outside=0 time=0.0s minGap=23.4cm laps=0 E-STOP
+PASS params#2 no room: static, C-O (110 cm)      : no lap ovtOk=0 fail=0 side=1 outside=1 time=0.0s minGap=48.9cm laps=0 timeout
+PASS params#2 no room: static, C-O (110 cm)      : no lap ovtOk=0 fail=0 side=1 outside=1 time=0.0s minGap=48.9cm laps=0 timeout
+PASS params#2 no room: static, C-O (110 cm)      : no lap ovtOk=0 fail=0 side=1 outside=1 time=0.0s minGap=48.9cm laps=0 timeout
+PASS params#2 no room: static, C-O (110 cm)      : no lap ovtOk=0 fail=0 side=1 outside=1 time=0.0s minGap=48.9cm laps=0 timeout
+PASS params#2 no room: static, O-D (280 cm)      : no lap ovtOk=0 fail=0 side=1 outside=1 time=0.0s minGap=48.9cm laps=0 timeout
+PASS params#2 no room: static, O-D (280 cm)      : no lap ovtOk=0 fail=0 side=1 outside=1 time=0.0s minGap=48.9cm laps=0 timeout
+PASS params#2 no room: static, O-D (280 cm)      : no lap ovtOk=0 fail=0 side=1 outside=1 time=0.0s minGap=49.0cm laps=0 timeout
+PASS params#2 no room: static, O-D (280 cm)      : no lap ovtOk=0 fail=0 side=1 outside=1 time=0.0s minGap=48.9cm laps=0 timeout
+PASS params#2 no room: static, D-E (400 cm)      : no lap ovtOk=1 fail=0 side=1 outside=1 time=28.0s minGap=17.7cm laps=1 E-STOP
+PASS params#2 no room: static, D-E (400 cm)      : no lap ovtOk=1 fail=0 side=1 outside=1 time=28.5s minGap=17.0cm laps=1 E-STOP
+FAIL params#2 no room: static, D-E (400 cm)      : no lap ovtOk=0 fail=1 side=1 outside=1 time=30.9s minGap=20.4cm laps=0 OVERTAKE FAIL
+PASS params#2 no room: static, D-E (400 cm)      : no lap ovtOk=0 fail=0 side=1 outside=1 time=0.0s minGap=33.9cm laps=0 left route at (278,-101) th=-116 d=45 ovt=5
+PASS params#2 no room: static, B-C (790 cm)      : no lap ovtOk=0 fail=0 side=-1 outside=-1 time=0.0s minGap=28.3cm laps=0 timeout
+FAIL params#2 no room: static, B-C (790 cm)      : no lap ovtOk=0 fail=1 side=-1 outside=-1 time=35.6s minGap=16.5cm laps=1 OVERTAKE FAIL
+PASS params#2 no room: static, B-C (790 cm)      : no lap ovtOk=0 fail=0 side=-1 outside=-1 time=0.0s minGap=28.3cm laps=0 timeout
+FAIL params#2 no room: static, B-C (790 cm)      : no lap ovtOk=0 fail=1 side=-1 outside=-1 time=28.6s minGap=15.6cm laps=1 OVERTAKE FAIL
+FAIL params#3 static, C-O (65 cm)                : no lap ovtOk=1 fail=0 side=1 outside=1 time=12.7s minGap=9.0cm laps=1 COLLISION
+FAIL params#3 static, C-O (65 cm)                : no lap ovtOk=1 fail=0 side=1 outside=1 time=12.7s minGap=17.5cm laps=1 E-STOP
+FAIL params#3 static, C-O (65 cm)                : no lap ovtOk=1 fail=1 side=1 outside=1 time=28.2s minGap=16.7cm laps=1 OVERTAKE FAIL
+FAIL params#3 static, C-O (65 cm)                : no lap ovtOk=1 fail=1 side=1 outside=1 time=28.3s minGap=16.7cm laps=1 OVERTAKE FAIL
+PASS params#3 static, O-D (222 cm)               : lap done ovtOk=2 fail=0 side=1 outside=1 time=25.7s minGap=18.8cm laps=2 
+PASS params#3 static, O-D (222 cm)               : lap done ovtOk=2 fail=0 side=1 outside=1 time=26.0s minGap=16.9cm laps=2 
+PASS params#3 static, O-D (222 cm)               : lap done ovtOk=2 fail=0 side=1 outside=1 time=25.6s minGap=19.3cm laps=2 
+PASS params#3 static, O-D (222 cm)               : lap done ovtOk=2 fail=0 side=1 outside=1 time=25.8s minGap=17.8cm laps=2 
+PASS params#3 static, O-D (232 cm)               : lap done ovtOk=2 fail=0 side=1 outside=1 time=37.7s minGap=16.7cm laps=2 
+PASS params#3 static, O-D (232 cm)               : lap done ovtOk=2 fail=0 side=1 outside=1 time=40.0s minGap=15.8cm laps=2 
+PASS params#3 static, O-D (232 cm)               : lap done ovtOk=2 fail=0 side=1 outside=1 time=37.7s minGap=19.4cm laps=2 
+PASS params#3 static, O-D (232 cm)               : lap done ovtOk=2 fail=0 side=1 outside=1 time=37.9s minGap=20.2cm laps=2 
+PASS params#3 static big r=12, O-D (225 cm)      : lap done ovtOk=2 fail=0 side=1 outside=1 time=27.9s minGap=18.1cm laps=2 
+PASS params#3 static big r=12, O-D (225 cm)      : lap done ovtOk=2 fail=0 side=1 outside=1 time=27.8s minGap=19.1cm laps=2 
+PASS params#3 static big r=12, O-D (225 cm)      : lap done ovtOk=2 fail=0 side=1 outside=1 time=27.7s minGap=20.1cm laps=2 
+PASS params#3 static big r=12, O-D (225 cm)      : lap done ovtOk=2 fail=0 side=1 outside=1 time=33.8s minGap=19.6cm laps=2 
+FAIL params#3 slow robot 5 cm/s, from 215 cm     : no lap ovtOk=0 fail=0 side=1 outside=1 time=3.5s minGap=18.9cm laps=0 E-STOP
+FAIL params#3 slow robot 5 cm/s, from 215 cm     : no lap ovtOk=0 fail=0 side=1 outside=1 time=3.4s minGap=20.1cm laps=0 E-STOP
+FAIL params#3 slow robot 5 cm/s, from 215 cm     : no lap ovtOk=0 fail=0 side=1 outside=1 time=3.4s minGap=20.1cm laps=0 E-STOP
+FAIL params#3 slow robot 5 cm/s, from 215 cm     : no lap ovtOk=0 fail=0 side=1 outside=1 time=3.5s minGap=18.9cm laps=0 E-STOP
+PASS params#3 no room: static, C-O (110 cm)      : no lap ovtOk=0 fail=0 side=1 outside=1 time=0.0s minGap=39.3cm laps=0 timeout
+PASS params#3 no room: static, C-O (110 cm)      : no lap ovtOk=0 fail=0 side=1 outside=1 time=0.0s minGap=39.3cm laps=0 timeout
+PASS params#3 no room: static, C-O (110 cm)      : no lap ovtOk=0 fail=0 side=1 outside=1 time=0.0s minGap=39.3cm laps=0 timeout
+PASS params#3 no room: static, C-O (110 cm)      : no lap ovtOk=0 fail=0 side=1 outside=1 time=0.0s minGap=39.3cm laps=0 timeout
+PASS params#3 no room: static, O-D (280 cm)      : no lap ovtOk=0 fail=0 side=1 outside=1 time=0.0s minGap=39.2cm laps=0 timeout
+PASS params#3 no room: static, O-D (280 cm)      : no lap ovtOk=0 fail=0 side=1 outside=1 time=0.0s minGap=39.3cm laps=0 timeout
+PASS params#3 no room: static, O-D (280 cm)      : no lap ovtOk=0 fail=0 side=1 outside=1 time=0.0s minGap=39.3cm laps=0 timeout
+PASS params#3 no room: static, O-D (280 cm)      : no lap ovtOk=0 fail=0 side=1 outside=1 time=0.0s minGap=39.3cm laps=0 timeout
+PASS params#3 no room: static, D-E (400 cm)      : lap done ovtOk=2 fail=0 side=1 outside=1 time=27.3s minGap=25.1cm laps=2 
+PASS params#3 no room: static, D-E (400 cm)      : lap done ovtOk=2 fail=0 side=1 outside=1 time=27.0s minGap=25.0cm laps=2 
+PASS params#3 no room: static, D-E (400 cm)      : lap done ovtOk=2 fail=0 side=1 outside=1 time=26.5s minGap=22.3cm laps=2 
+PASS params#3 no room: static, D-E (400 cm)      : lap done ovtOk=2 fail=0 side=1 outside=1 time=27.1s minGap=24.9cm laps=2 
+PASS params#3 no room: static, B-C (790 cm)      : no lap ovtOk=0 fail=0 side=-1 outside=-1 time=0.0s minGap=35.2cm laps=0 timeout
+PASS params#3 no room: static, B-C (790 cm)      : no lap ovtOk=0 fail=0 side=-1 outside=-1 time=0.0s minGap=35.1cm laps=0 timeout
+PASS params#3 no room: static, B-C (790 cm)      : no lap ovtOk=0 fail=0 side=-1 outside=-1 time=0.0s minGap=35.1cm laps=0 timeout
+PASS params#3 no room: static, B-C (790 cm)      : no lap ovtOk=1 fail=0 side=-1 outside=-1 time=12.6s minGap=23.5cm laps=1 timeout
+OVERTAKING SIMULATION: with room: 50/80 overtaken on the outside and lap completed (static r<=8 cm: 35/48); without room: 58/64 waited / stopped safely; contacts with the obstacle: 1 of 144 runs
+no obstacle: PASS laps=2
